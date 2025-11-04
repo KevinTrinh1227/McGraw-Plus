@@ -1,138 +1,132 @@
-// contentSolver.js (MV3-safe)
-// ------------------------------------------------------------------
-let botEnabled = false;
+let botEnabled = null; // Internal state for the while loop
 let responseMap = {};
-let runToken = 0; // invalidates any in-flight loop immediately
 
-// ---------- helpers: extension & storage guards ----------
-function extAlive() {
-  return !!(globalThis.chrome && chrome.runtime && chrome.runtime.id);
-}
+// The window variable is still needed for the popup to read the current state
+window.botEnabled = false;
 
-function storageGet(keys) {
+// Activation is now triggered exclusively by the background.js controller
+// sending an "activate" message.
+
+function updateMapData(question, answers, storeAPI) {
+  // NOTE: The 'storeAPI' flag is now obsolete but kept as a parameter for compatibility.
   return new Promise((resolve) => {
-    if (!extAlive() || !chrome.storage?.local) return resolve({});
-    try {
-      chrome.storage.local.get(keys, (res) => {
-        if (chrome.runtime.lastError) return resolve({});
-        resolve(res || {});
+    // Ensure answers is always an array for consistency
+    const answerArray = Array.isArray(answers) ? answers : [answers];
+
+    // Check if the question is new or if the stored answer is different
+    if (
+      !(question in responseMap) ||
+      JSON.stringify(responseMap[question]) !== JSON.stringify(answerArray)
+    ) {
+      // ❌ REMOVED: storeQuestionToAPI(question, answerArray); call
+
+      chrome.storage.local.get("responseMap", (result) => {
+        const tempResponseMap = result.responseMap || {};
+        tempResponseMap[question] = answerArray;
+        chrome.storage.local.set({ responseMap: tempResponseMap }, () => {
+          responseMap = tempResponseMap; // Update the responseMap in the content script
+          resolve();
+        });
       });
-    } catch {
-      resolve({});
+    } else {
+      resolve();
     }
   });
 }
 
-function storageSet(obj) {
-  return new Promise((resolve) => {
-    if (!extAlive() || !chrome.storage?.local) return resolve(false);
-    try {
-      chrome.storage.local.set(obj, () => {
-        if (chrome.runtime.lastError) return resolve(false);
-        resolve(true);
-      });
-    } catch {
-      resolve(false);
-    }
-  });
+// 🔑 NEW LOCAL FUNCTION: Replaces getAnswerFromAPI
+async function getAnswerFromLocalMap(question) {
+  if (responseMap[question]) {
+    return responseMap[question];
+  }
+  return null;
 }
 
 function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function safeQuery(sel) {
-  try {
-    return document.querySelector(sel);
-  } catch {
-    return null;
+// drag and drop section
+async function simulateDragAndDrop(source, target) {
+  const rect1 = source.getBoundingClientRect();
+  const rect2 = target.getBoundingClientRect();
+
+  const mousedown = new MouseEvent("mousedown", {
+    bubbles: true,
+    cancelable: true,
+    view: window,
+    clientX: rect1.left + rect1.width / 2,
+    clientY: rect1.top + rect1.height / 2,
+  });
+
+  const mouseup = new MouseEvent("mouseup", {
+    bubbles: true,
+    cancelable: true,
+    view: window,
+    clientX: rect2.left + rect2.width / 2,
+    clientY: rect2.top + rect2.height / 2,
+  });
+
+  source.dispatchEvent(mousedown);
+  await sleep(800);
+
+  for (let i = 1; i <= 50; i++) {
+    const intermediateX =
+      rect1.left + (rect2.left - rect1.left) * (i / 50) + rect1.width / 2;
+    const intermediateY =
+      rect1.top + (rect2.top - rect1.top) * (i / 50) + rect1.height / 2;
+
+    const mousemove = new MouseEvent("mousemove", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX: intermediateX,
+      clientY: intermediateY,
+    });
+
+    source.dispatchEvent(mousemove);
+    await sleep(10);
   }
+  const finalMouseMove = new MouseEvent("mousemove", {
+    bubbles: true,
+    cancelable: true,
+    view: window,
+    clientX: rect2.left + rect2.width / 2,
+    clientY: rect2.top + rect2.height / 2,
+  });
+  source.dispatchEvent(finalMouseMove);
+  await sleep(500);
+  target.dispatchEvent(mouseup);
+  await sleep(200);
 }
 
-// ---------- bootstrap local cache ----------
-(async () => {
-  const { responseMap: saved } = await storageGet(["responseMap"]);
-  responseMap = saved || {};
-})();
+// begin solver.js
 
-// ---------- stats ----------
-async function incrementStat(key) {
-  try {
-    if (!extAlive()) return;
-    const {
-      stats = { solved: 0, attempted: 0 },
-      allTime = { solved: 0, attempted: 0 },
-    } = await storageGet(["stats", "allTime"]);
-    stats[key] = (stats[key] || 0) + 1;
-    allTime[key] = (allTime[key] || 0) + 1;
-    await storageSet({ stats, allTime });
-  } catch {}
-}
-
-// ---------- map data & API ----------
-async function updateMapData(question, answers, alsoStoreToAPI) {
-  try {
-    if (!question || !answers) return;
-    if (responseMap && question in responseMap) return;
-
-    // write locally first
-    const { responseMap: existing = {} } = await storageGet(["responseMap"]);
-    existing[question] = answers;
-    responseMap = existing;
-    await storageSet({ responseMap: existing });
-
-    // send to API via background (CORS-safe)
-    if (alsoStoreToAPI && extAlive()) {
-      try {
-        await chrome.runtime.sendMessage({
-          type: "STORE_QUESTION",
-          question,
-          answers,
-        });
-      } catch {}
-    }
-  } catch {}
-}
-
-async function getAnswerFromAPI(question) {
-  try {
-    if (!extAlive()) return null;
-    const timeout = new Promise((resolve) =>
-      setTimeout(() => resolve(null), 2500)
-    );
-    const api = chrome.runtime.sendMessage({ type: "GET_ANSWER", question });
-    const res = await Promise.race([timeout, api]);
-    if (!res || !res.ok || !res.data) return null;
-    const answer = res.data?.answer ?? null;
-    if (answer) await updateMapData(question, answer, false);
-    return answer;
-  } catch {
-    return null;
-  }
-}
-
-// ---------- reading utilities ----------
 function readQuestionAndResponses() {
   let question = "";
   let responses = [];
 
-  const promptEls = document.getElementsByClassName("prompt");
-  if (!promptEls || promptEls.length === 0) {
-    return { question: "", responses: [], responseElements: [] };
+  // Find the question
+  let questionElement = document.getElementsByClassName("prompt");
+  if (questionElement.length > 0) {
+    const paragraphElement = questionElement[0].querySelector("p");
+    // Filter out the nested <span> elements and retrieve only text nodes
+    const textNodes = [...paragraphElement.childNodes].filter(
+      (node) => node.nodeType === Node.TEXT_NODE
+    );
+    // Join text nodes with a placeholder for the blank (if any)
+    question = textNodes.map((node) => node.textContent).join("_____");
   }
 
-  const p = promptEls[0]?.querySelector("p");
-  if (!p) return { question: "", responses: [], responseElements: [] };
-
-  const textNodes = [...p.childNodes].filter(
-    (n) => n.nodeType === Node.TEXT_NODE
-  );
-  question = textNodes.map((n) => n.textContent).join("_____");
-
+  // Find the potential responses
+  let responseElements = [];
   const container = document.getElementsByClassName("air-item-container")[0];
-  let responseElements = container
-    ? container.getElementsByClassName("choiceText rs_preserve")
-    : [];
+  if (container) {
+    responseElements = container.getElementsByClassName(
+      "choiceText rs_preserve"
+    );
+  }
+
   if (responseElements.length) {
     for (let i = 0; i < responseElements.length; i++) {
       responses.push(responseElements[i].textContent);
@@ -142,228 +136,385 @@ function readQuestionAndResponses() {
   return { question, responses, responseElements };
 }
 
-// ---------- core solver ----------
-async function selectCorrectResponse(
-  question,
-  responses,
-  responseElements,
-  token
-) {
+async function selectCorrectResponse(question, responses, responseElements) {
   await sleep(100);
-  if (!botEnabled || token !== runToken) return;
+  // --- Check for Next/Review Concept button ---
+  let nextButtonContainer = document.getElementsByClassName(
+    "next-button-container"
+  )[0];
+  if (nextButtonContainer) {
+    let nextButton = nextButtonContainer.getElementsByTagName("button")[0];
+    let reviewConceptButton = document.getElementsByClassName(
+      "btn btn-tertiary lr-tray-button"
+    )[0];
 
-  // Next/Review screen handling
-  const nextContainer = document.querySelector(".next-button-container");
-  if (nextContainer) {
-    const nextButton = nextContainer.querySelector("button");
-    const reviewButton = document.querySelector(
-      ".btn.btn-tertiary.lr-tray-button"
-    );
-
-    if (nextButton?.hasAttribute("disabled")) {
-      reviewButton?.click();
-      await sleep(1000);
-      if (!botEnabled || token !== runToken) return;
-      const continueButton = document.querySelector(
-        ".button-bar-wrapper button"
-      );
-      continueButton?.click();
-      await sleep(1000);
+    // If the 'Next' button is disabled, it means we need to review the concept first
+    if (nextButton && nextButton.hasAttribute("disabled")) {
+      if (reviewConceptButton) {
+        reviewConceptButton.click();
+        await sleep(4000);
+        let continueButton = document.querySelector(
+          ".button-bar-wrapper button"
+        );
+        if (continueButton) {
+          continueButton.click();
+          await sleep(500); // Give time for content to reload
+        }
+      }
     }
 
-    nextButton?.click();
-    await sleep(1000);
-    if (!botEnabled || token !== runToken) return;
-
-    const toQuestionsButton = safeQuery(
-      'button[data-automation-id="reading-questions-button"]'
-    );
-    if (toQuestionsButton) {
-      toQuestionsButton.click();
-      await sleep(1500);
+    // Attempt to click Next button if it exists and is now enabled
+    if (nextButton && !nextButton.hasAttribute("disabled")) {
+      nextButton.click();
+      return;
     }
+  }
+
+  let answerButton = document.querySelector(
+    ".confidence-buttons-container button"
+  );
+  if (!answerButton) {
+    console.log("No answer button found, likely not on a question page.");
     return;
   }
 
-  // Confidence button presence
-  const confidenceContainer = document.querySelector(
-    ".confidence-buttons-container"
-  );
-  const answerButton = confidenceContainer?.querySelector("button");
-  if (!answerButton) return;
+  // --- Attempt to retrieve answer ---
+  // Replaced getAnswerFromAPI with local map check
+  if (!responseMap[question]) {
+    await getAnswerFromLocalMap(question);
+  } else {
+    console.log("Answer already stored locally.");
+  }
 
-  // Try to load answer
-  if (!responseMap[question]) await getAnswerFromAPI(question);
-
+  // --- Use Stored Answer (If found) ---
   if (responseMap[question]) {
-    const correct = responseMap[question];
+    const correctResponses = responseMap[question];
+    console.log("Answer found:", correctResponses);
 
-    if (responseElements.length === 0) {
-      // fill in the blank
-      const blanks = document.querySelectorAll(
-        ".input-container span-to-div input"
+    const isFillInBlank =
+      responseElements.length === 0 &&
+      document.getElementsByClassName("input-container span-to-div").length > 0;
+    const isMultipleChoice = responseElements.length > 0;
+
+    if (isFillInBlank) {
+      let blanks = document.getElementsByClassName(
+        "input-container span-to-div"
       );
-      blanks.forEach((input, idx) => {
-        input.focus();
-        document.execCommand(
-          "insertText",
-          false,
-          (correct[idx] || "").toString()
-        );
-      });
-    } else {
-      // multiple choice
+      for (let x = 0; x < blanks.length; x++) {
+        if (x < correctResponses.length) {
+          let inputTag = blanks[x].getElementsByTagName("input")[0];
+          inputTag.focus();
+          document.execCommand("insertText", false, correctResponses[x]);
+        }
+      }
+    } else if (isMultipleChoice) {
       let clicked = false;
-      responses.forEach((res, i) => {
-        if (Array.isArray(correct) ? correct.includes(res) : correct === res) {
-          responseElements[i]?.click();
+      for (let i = 0; i < responses.length; i++) {
+        if (correctResponses.includes(responses[i])) {
+          responseElements[i].click();
           clicked = true;
         }
-      });
-      if (!clicked && responseElements.length > 0) responseElements[0].click();
+      }
+      // Fail-safe: if answer was somehow wrong or not found in current options, click the first one
+      if (!clicked) {
+        responseElements[0]?.click();
+      }
     }
 
-    await sleep(400 + Math.random() * 300);
-    if (!botEnabled || token !== runToken) return;
+    // Submit the known answer
+    await sleep(Math.random() * 200 + 500);
     answerButton.click();
-  } else {
-    // guess, then learn from feedback
-    let isFillInBlank = false;
-    let isDragDrop = false;
 
-    if (!responseElements[0]) {
+    // --- Answer Not Stored (Guessing and Learning) ---
+  } else {
+    let isFillInBlankQuestion = false;
+    let isDragAndDrop = false;
+
+    // Check for Fill-in-the-Blank or Drag-and-Drop
+    if (responseElements.length === 0) {
       if (document.querySelector(".match-single-response-wrapper")) {
-        isDragDrop = true;
-        return; // skip drag/drop for now
-      } else {
-        isFillInBlank = true;
-        const blanks = document.querySelectorAll(
-          ".input-container span-to-div input"
+        isDragAndDrop = true;
+        // Drag and drop solving logic (currently incomplete, attempts a few drops)
+        await sleep(500);
+        let choices = document.querySelectorAll(
+          ".choices-container .choice-item-wrapper .content p"
         );
-        blanks.forEach((input) => {
-          input.focus();
-          document.execCommand("insertText", false, "Guess-Answer");
-        });
+        let drop = document.querySelectorAll(
+          ".-placeholder.choice-item-wrapper"
+        );
+        let numDrops = 0;
+
+        while (drop.length > 0 && numDrops < 6) {
+          console.log("Executing drag and drop: ", numDrops);
+          if (choices[0] && drop[0]) {
+            await simulateDragAndDrop(choices[0], drop[0]);
+          }
+          await sleep(500);
+          choices = document.querySelectorAll(
+            ".choices-container .choice-item-wrapper .content p"
+          );
+          drop = document.querySelectorAll(".-placeholder.choice-item-wrapper");
+          await sleep(500);
+          numDrops += 1;
+        }
+        if (numDrops >= 6 && drop.length > 0) {
+          console.log("Giving up drag and drop after 6 attempts.");
+        }
+      } else if (
+        document.getElementsByClassName("input-container span-to-div").length >
+        0
+      ) {
+        isFillInBlankQuestion = true;
+        let blanks = document.getElementsByClassName(
+          "input-container span-to-div"
+        );
+        for (let x = 0; x < blanks.length; x++) {
+          let inputTag = blanks[x].getElementsByTagName("input")[0];
+          inputTag.focus();
+          document.execCommand("insertText", false, "Guess Answer");
+        }
       }
     } else {
+      // Guess: Click the first multiple-choice option
       responseElements[0].click();
     }
 
-    await sleep(400 + Math.random() * 300);
-    if (!botEnabled || token !== runToken) return;
-    safeQuery("button.btn-confidence")?.removeAttribute("disabled");
-    answerButton.click();
-
-    await sleep(600 + Math.random() * 300);
-    if (!botEnabled || token !== runToken) return;
-
-    const answers = [];
-    if (isFillInBlank) {
-      const correctEls = document.querySelectorAll(
-        ".correct-answers .correct-answer"
-      );
-      correctEls.forEach((el) => {
-        const text = el.textContent?.replace(/,/g, "").split(" ")[0];
-        if (text) answers.push(text);
-      });
-    } else if (!isDragDrop) {
-      const answerEls =
-        document.querySelectorAll(
-          ".answer-container .choiceText.rs_preserve"
-        ) || document.querySelectorAll(".answer-container");
-      answerEls.forEach((el) => answers.push(el.textContent));
+    // Submit the guess
+    await sleep(Math.random() * 200 + 300);
+    // Ensure button is enabled before clicking (for systems that disable it until a choice is made)
+    if (answerButton) {
+      answerButton.removeAttribute("disabled");
+      answerButton.click();
     }
 
-    await updateMapData(question, answers, true);
-    await incrementStat("attempted");
-  }
+    // --- Learn the Correct Answer ---
+    await sleep(Math.random() * 100 + 400);
+    let answers = [];
 
-  await incrementStat("solved");
-  await sleep(400 + Math.random() * 300);
-  if (!botEnabled || token !== runToken) return;
-
-  const nextBtn = document.querySelector(".next-button-container button");
-  const reviewBtn = document.querySelector(".btn.btn-tertiary.lr-tray-button");
-  if (nextBtn?.hasAttribute("disabled")) {
-    reviewBtn?.click();
-    await sleep(1000);
-    if (!botEnabled || token !== runToken) return;
-    const continueBtn = document.querySelector(".button-bar-wrapper button");
-    continueBtn?.click();
-  }
-
-  await sleep(500);
-  if (!botEnabled || token !== runToken) return;
-  nextBtn?.click();
-}
-
-async function answerQuestion(token) {
-  const { question, responses, responseElements } = readQuestionAndResponses();
-  if (!question) return;
-  await selectCorrectResponse(question, responses, responseElements, token);
-}
-
-// ---------- start/stop ----------
-let answering = false;
-
-async function activateBot() {
-  if (botEnabled) return;
-  botEnabled = true;
-  const token = ++runToken;
-
-  await sleep(300);
-
-  let errorCount = 0;
-  while (botEnabled && token === runToken) {
-    if (answering) {
-      await sleep(100);
-      continue;
-    }
-    answering = true;
-    try {
-      const isReadingPage =
-        !document.querySelector(".prompt") &&
-        !!document.querySelector(
-          'button[data-automation-id="reading-questions-button"]'
+    if (isFillInBlankQuestion) {
+      // Extract correct answers from fill-in-the-blank feedback
+      let answerElements = document.getElementsByClassName("correct-answers");
+      for (let x = 0; x < answerElements.length; x++) {
+        // This is highly specific to the format: "correct-answer" inner text, removing commas and taking the first word/value
+        const text =
+          answerElements[x].querySelector(".correct-answer")?.textContent;
+        if (text) {
+          answers.push(text.replace(/,/g, "").split(" ")[0]);
+        }
+      }
+    } else if (isDragAndDrop) {
+      // TODO: Implement reliable answer extraction for drag and drop
+      console.log("Skipping answer storage for complex drag and drop.");
+      // MUST return here to prevent immediate navigation attempt
+      return;
+    } else {
+      // Multiple Choice / True-False
+      // Extract correct answers from the highlighted/revealed answer container
+      const answerContainer =
+        document.getElementsByClassName("answer-container")[0];
+      if (answerContainer) {
+        let answerElements = answerContainer.getElementsByClassName(
+          "choiceText rs_preserve"
         );
+        // Fallback for simple True/False or similar format where there's no choiceText
+        if (answerElements.length === 0) {
+          answerElements = answerContainer.getElementsByClassName("choice-row"); // Assuming choice-row contains the answer text
+        }
 
-      if (isReadingPage) {
-        safeQuery(
-          'button[data-automation-id="reading-questions-button"]'
-        )?.click();
-        await sleep(1000);
-      } else {
-        await answerQuestion(token);
+        for (let i = 0; i < answerElements.length; i++) {
+          answers.push(answerElements[i].textContent.trim());
+        }
       }
-      errorCount = 0;
-    } catch (e) {
-      if (++errorCount > 5) {
-        deactivateBot();
-        break;
-      }
-    } finally {
-      answering = false;
     }
-    await sleep(400 + Math.random() * 100);
+
+    // Store the newly learned answer locally (storeAPI is implicitly false/ignored)
+    if (answers.length > 0) {
+      // 🔑 AWAIT IS CRITICAL HERE to prevent "Context Invalidated"
+      await updateMapData(question, answers, false); //
+    }
+  }
+
+  // --- Move to Next Question ---
+  await sleep(Math.random() * 200 + 300);
+  let nextButton = document.querySelector(".next-button-container button");
+  let reviewConceptButton = document.querySelector(
+    ".btn.btn-tertiary.lr-tray-button"
+  );
+
+  if (nextButton) {
+    // Re-check for disabled status (in case the answer was right/wrong and changed state)
+    if (nextButton.hasAttribute("disabled")) {
+      if (reviewConceptButton) {
+        reviewConceptButton.click();
+        await sleep(500);
+        let continueButton = document.querySelector(
+          ".button-bar-wrapper button"
+        );
+        if (continueButton) {
+          continueButton.click();
+          await sleep(500);
+        }
+      }
+    }
+
+    // Click Next
+    await sleep(500);
+    nextButton.click();
+  }
+}
+
+// Main function that reads the question and responses and selects the correct response
+async function answerQuestion() {
+  // Ensure we are in a valid extension context before proceeding
+  if (!chrome.runtime.getManifest()) {
+    console.warn("S: Extension context invalidated during question check.");
+    botEnabled = false;
+    return;
+  }
+
+  let { question, responses, responseElements } = readQuestionAndResponses();
+  // Ensure we have a question before attempting to answer/store
+  if (question && question.trim() !== "") {
+    await selectCorrectResponse(question, responses, responseElements);
+  } else {
+    // If not on a question page, check if we need to click "Continue" or "Start Questions"
+    const toQuestionsButton = document.querySelector(
+      'button[data-automation-id="reading-questions-button"]'
+    );
+    const continueButton = document.querySelector(".button-bar-wrapper button");
+
+    if (toQuestionsButton) {
+      console.log("Detected reading page—clicking button to go to questions.");
+      toQuestionsButton.click();
+    } else if (
+      continueButton &&
+      continueButton.textContent.includes("Continue")
+    ) {
+      console.log("Detected review page—clicking Continue.");
+      continueButton.click();
+    } else {
+      console.log("Could not find a valid question or navigation element.");
+    }
+  }
+}
+
+let answerQuestionRunning = false;
+
+// 🔑 NEW FUNCTION: Contains the core while loop logic with self-healing checks.
+async function _runBotLoop() {
+  while (botEnabled) {
+    // 🔑 Critical Check: If the context is invalidated, stop the loop immediately.
+    if (!chrome.runtime.getManifest()) {
+      console.warn("S: Extension context invalidated. Stopping bot loop.");
+      botEnabled = false;
+      // Do not use 'return' here, let the loop naturally exit and be restarted by activateBot if needed.
+      break;
+    }
+
+    if (!answerQuestionRunning) {
+      answerQuestionRunning = true;
+      try {
+        await answerQuestion();
+      } catch (error) {
+        // If an error occurs, log it, but the loop continues unless context is invalidated.
+        console.error("Error while answering question in loop:", error);
+      }
+      answerQuestionRunning = false;
+    }
+    await sleep(Math.random() * 200 + 300);
+  }
+}
+
+// 🔑 MODIFIED FUNCTION: Manages state and uses a wrapper to restart the loop if it fails.
+async function activateBot() {
+  console.log("S: Activating Bot");
+
+  // Only proceed if the bot is currently inactive
+  if (botEnabled === null || botEnabled === false) {
+    botEnabled = true; // Set local flag
+    window.botEnabled = true; // Update global flag for popup
+    chrome.storage.local.set({ isBotEnabled: true });
+
+    // Loop until botEnabled is manually set to false by deactivateBot()
+    while (botEnabled) {
+      try {
+        await _runBotLoop();
+      } catch (e) {
+        console.error(
+          "S: Fatal error caught in main bot loop wrapper. Restarting in 500ms.",
+          e
+        );
+      }
+
+      // If the bot is still meant to be running, wait briefly and try to restart the loop
+      if (botEnabled) {
+        await sleep(500);
+        console.log("S: Attempting to restart bot loop...");
+      }
+    }
   }
 }
 
 function deactivateBot() {
+  console.log("S: Deactivating Bot");
+  // 🔑 IMMEDIATE STOP: Setting this to false stops the while loop in _runBotLoop
   botEnabled = false;
-  runToken++; // cancels any pending awaits instantly
-  answering = false;
-  console.log("Bot deactivated.");
+  window.botEnabled = false; // Update global flag for popup
+
+  // 🔑 PERSISTENCE: Save state to Chrome Storage
+  chrome.storage.local.set({ isBotEnabled: false });
 }
 
-// ---------- popup messages ----------
-window.addEventListener("message", (event) => {
-  if (!event?.data) return;
-  if (event.data.type === "START_SOLVER") activateBot();
-  if (event.data.type === "STOP_SOLVER") deactivateBot();
+// listen for messages from the popup AND background script to enable/disable the bot
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log("Received message:", request);
+  if (request == "activate") {
+    activateBot();
+  }
+  if (request == "deactivate") {
+    deactivateBot();
+  }
+
+  // 🔑 MESSAGE PORT FIX: RETURN TRUE is essential for async messaging
+  return true; //
 });
 
-// (optional) legacy runtime messages from older popup code
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg === "activate") activateBot();
-  if (msg === "deactivate") deactivateBot();
+//listen for messages from highlighter.js to update responseMap
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "updateMapData" && message.data) {
+    const { question, answers } = message.data;
+    if (question && answers) {
+      // Update local map only
+      updateMapData(question, answers, false);
+      console.log("S: Received data from H and updated map (local only).");
+    }
+  }
+});
+
+// 🚀 NEW INITIALIZATION BLOCK: Check storage on script load to set the initial state correctly
+chrome.storage.local.get("isBotEnabled", (result) => {
+  const isEnabled = result.isBotEnabled === true;
+
+  // Set the local flags to match the persistent state
+  botEnabled = isEnabled;
+  window.botEnabled = isEnabled;
+
+  if (isEnabled) {
+    console.log(
+      "S: Content script re-initialized. Bot was active, restarting loop."
+    );
+    // If the bot was active when the page loaded/reloaded, start the loop
+    // The inner logic of activateBot prevents multiple loop starts.
+    activateBot();
+  } else {
+    console.log(
+      "S: Content script re-initialized. Bot is currently deactivated."
+    );
+  }
+
+  // Load response map for immediate use
+  chrome.storage.local.get("responseMap", (mapResult) => {
+    responseMap = mapResult.responseMap || {};
+    console.log("S: Loaded responseMap on initialization.");
+  });
 });

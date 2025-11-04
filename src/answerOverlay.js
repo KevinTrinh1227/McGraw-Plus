@@ -1,143 +1,111 @@
-// highlighter.js
-// ------------------------------------------------------------
-// This script scans McGrawHill SmartBook pages, saves answers
-// locally, and highlights previously stored correct responses.
-//
-// It runs continuously to check if new questions or answers appear,
-// storing them into Chrome storage for reuse.
-// ------------------------------------------------------------
+let answerMap = {}
 
-let storedAnswers = {}; // In-memory cache of all known Q&A pairs
+// Define a function to check if the question has already been answered
+function hasAnsweredQuestion(question) {
+    return answerMap.hasOwnProperty(question);
+}
 
-// 🧠 Check if a question already exists in memory
-const questionExists = (questionText) =>
-  Object.hasOwn(storedAnswers, questionText);
-
-// 💾 Save answers to Chrome local storage and update memory
-const saveAnswers = (questionText, answersArray) => {
-  if (questionExists(questionText)) return; // Skip duplicates
-
-  chrome.storage.local.get(["responseMap"], (data) => {
-    const currentMap = data.responseMap || {};
-    currentMap[questionText] = answersArray;
-
-    chrome.storage.local.set({ responseMap: currentMap }, () => {
-      console.log("[Highlighter] Stored answers:", currentMap);
-      storedAnswers = currentMap;
-    });
-  });
-};
-
-// ✨ Visually highlight correct answers on the page
-const paintAnswers = (questionText) => {
-  const correct = storedAnswers[questionText];
-  if (!correct) return;
-
-  insertDisplayText(correct);
-
-  const container = document.querySelector(".air-item-container");
-  if (!container) return;
-
-  const options = container.querySelectorAll(".choice-row");
-  options.forEach((opt) => {
-    const text = opt.textContent.trim();
-    if (correct.includes(text) && opt.style.backgroundColor !== "lightgreen") {
-      opt.style.backgroundColor = "#c8f7c5";
-      opt.style.border = "1px solid #000";
-      opt.style.borderRadius = "10px";
+// Define a function to store the answers in the map
+function storeAnswers(question, answers) {
+    if (!hasAnsweredQuestion(question)) {
+        chrome.storage.local.get('responseMap', (result) => {
+            const tempAnswerMap = result.responseMap || {};
+            tempAnswerMap[question] = answers;
+            chrome.storage.local.set({ responseMap: tempAnswerMap }, () => {
+              console.log('Data updated in local storage:', tempAnswerMap);
+              answerMap = tempAnswerMap; // Update the answerMap in the content script
+            });
+        });
     }
-  });
-};
+}
 
-// 📝 Display an answer box below the question area
-const insertDisplayText = (answers) => {
-  if (document.getElementById("solver-note")) return; // Prevent duplicates
+function highlightAnswers(question) {
+    let correctAnswers = answerMap[question];
+    displayText(correctAnswers)
 
-  console.log("[Highlighter] Displaying:", answers);
+    let responseElements = document.getElementsByClassName("air-item-container")[0].getElementsByClassName("choice-row");
 
-  const wrapper = document.createElement("div");
-  wrapper.id = "solver-note";
-  wrapper.style.cssText = `
-    border: 2px solid black;
-    border-radius: 10px;
-    color: black;
-    text-align: left;
-    margin-top: 1rem;
-    padding: 0.5rem;
-    background: #fefefe;
-  `;
-
-  wrapper.innerHTML = `
-    <p style="font-weight:bold;">Answer:</p>
-    <div>${answers.map((a) => `<p>${a}</p>`).join("")}</div>
-  `;
-
-  const container =
-    document.querySelector(".responses-container") ||
-    document.querySelector(".dlc_question");
-
-  if (!container) {
-    console.warn("[Highlighter] No valid container found for answer box.");
+    for (const element of responseElements) {
+        if (correctAnswers.includes(element.textContent) && element.style.backgroundColor != "lightgreen") {
+            element.style.backgroundColor = "#C6F6C6";
+            element.style.border = "1px solid black";
+            element.style.borderRadius = "10px";
+        }
+    }
     return;
-  }
+}
 
-  container.appendChild(wrapper);
-};
 
-// 🔍 Main function to find and process questions/answers
-const highlightLoop = () => {
-  const prompt = document.querySelector(".prompt p");
-  if (!prompt) return;
+function displayText (ans) {
+    let check = document.getElementById("smartbooksolver-note");
+    if (check) {
+        return;
+    }
+    console.log("H: Displaying answer:", ans)
+	var div = document.createElement('div');
+    div.innerHTML = `<div><p style="font-weight: bold; margin-left: 1rem;">Answer</p></div><div style="margin-left: 1rem;"><p style="color: black;">${ans.join('<br>')}</p></div>`;
+	div.id = 'smartbooksolver-note';
+	div.style.color = 'lightgray';
+	div.style.borderRadius = '10px';
+	div.style.border = '2px solid black';
+	div.style.textAlign = 'left';
+	let container = document.querySelectorAll('.responses-container');
+	if(container.length === 0) {
+		container = document.querySelectorAll('.dlc_question');
+		if(container.length === 0) {
+			console.log("H: No container");
+			return;
+		}
+	}
+	container[0].appendChild(div);
+}
 
-  // Extract only text (no <span> nodes)
-  const textNodes = Array.from(prompt.childNodes).filter(
-    (n) => n.nodeType === Node.TEXT_NODE
-  );
-  const questionText = textNodes.map((n) => n.textContent.trim()).join("_____");
-
-  // If already answered, just highlight it
-  if (
-    questionExists(questionText) &&
-    !document.querySelector(".answer-container")
-  ) {
-    paintAnswers(questionText);
-    return;
-  }
-
-  // Try to find answers and save them
-  const answerContainer = document.querySelector(".answer-container");
-  if (!answerContainer) {
-    // For drag/drop or temporary states
-    const correctEls = document.querySelectorAll(
-      ".correct-answers .correct-answer"
-    );
-    if (correctEls.length > 0) {
-      const collected = Array.from(correctEls).map(
-        (el) => el.textContent.replace(/,/g, "").split(" ")[0]
-      );
-      saveAnswers(questionText, collected);
-      return;
+// Define a function to get the answer elements and store the answers
+function highlighter() {
+    // check if answer stored
+    let questionElement = document.getElementsByClassName("prompt");
+    let question = ""
+    if (questionElement.length > 0) {
+        const paragraphElement = questionElement[0].querySelector('p');
+        // Filter out the nested <span> elements and retrieve only text nodes
+        const textNodes = [...paragraphElement.childNodes].filter(node => node.nodeType === Node.TEXT_NODE);
+        question = textNodes.map(node => node.textContent).join('_____');
+        if (hasAnsweredQuestion(question) && document.getElementsByClassName("answer-container").length == 0) {
+            highlightAnswers(question);
+            return;
+        }
+    }
+    // if not, store answers
+    let answerContainer = document.getElementsByClassName("answer-container");
+    if (answerContainer.length == 0) {
+        // store answer for drag and drop
+        let answerElements = document.getElementsByClassName("correct-answers");
+        let answers = [];
+        if (answerElements.length != 0) {
+            for (let x = 0; x < answerElements.length; x++) {
+                answers.push(answerElements[x].getElementsByClassName("correct-answer")[0].textContent.replace(/,/g, '').split(" ")[0]);            }
+            storeAnswers(question, answers)
+            return;
+        }
+        // currently solving it:
+        displayText(["We are currently testing many new features. Enabling the bot may fetch the correct answers on the first try.", "You can view stored answers in the flashcard tab in the extension popup. Good luck on your assignment and please leave us feedback :)"])
+        return;
     }
 
-    insertDisplayText([
-      "This tool is still learning and may fetch correct answers automatically.",
-      "You can view stored answers later from the popup flashcard tab.",
-      "Remember: for educational and testing use only.",
-    ]);
-    return;
-  }
+    // answer container exists -> store the answers
+    let answers = [];
+    // get the question name
 
-  // Extract answer choices from the answer container
-  let choiceElements = answerContainer.querySelectorAll(
-    ".choiceText.rs_preserve"
-  );
-  if (choiceElements.length === 0)
-    choiceElements = answerContainer.querySelectorAll(".answer-container");
+    // get the answer elements
+    let answerElements = document.getElementsByClassName("answer-container")[0].getElementsByClassName("choiceText rs_preserve");
+    if (answerElements.length == 0) {
+      answerElements = document.getElementsByClassName("answer-container");
+    }
+    for (let i = 0; i < answerElements.length; i++) {
+      answers.push(answerElements[i].textContent);
+    }
+    storeAnswers(question, answers)
+}
 
-  const answerTexts = Array.from(choiceElements).map((el) =>
-    el.textContent.trim()
-  );
-  saveAnswers(questionText, answerTexts);
-};
-
-setInterval(highlightLoop, 500);
+// Check page every .6 sec
+setInterval(highlighter, 600);

@@ -1,437 +1,274 @@
 /* ---------- Theme Variables ---------- */
 :root {
-  --bg: #121212;
-  --bg-secondary: #1c1c1c;
-  --text: #eaeaea;
-  --text-muted: #a0a0a0;
-  --accent: #64b5f6; /* baby blue accent */
+  --bg: #121212; /* Very dark background */
+  --bg-secondary: #1c1c1c; /* Slightly lighter background for cards/sections */
+  --text: #eaeaea; /* Light text */
+  --text-muted: #a0a0a0; /* Muted text for secondary info */
+  --accent: #64b5f6; /* Baby blue accent */
+  --accent-hover: #90caf9; /* Lighter baby blue for hover */
+  --active-color: #4caf50; /* Green for Active status */
+  --inactive-color: #f44336; /* Red for Inactive status */
   --border: #2a2a2a;
-  --radius: 10px;
+  --radius: 8px;
   --transition: 0.3s ease;
 }
 
-/* ---------- Global Layout ---------- */
+/* ---------- Global Styles ---------- */
 body {
-  font-family: "Segoe UI", "Roboto", sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background-color: var(--bg);
   color: var(--text);
   margin: 0;
-  padding: 20px;
-  width: 380px; /* wider popup */
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  padding: 0;
+  width: 320px; /* Increased width slightly to accommodate inline buttons */
 }
 
-/* ---------- Headings & Text ---------- */
-h1,
-h2,
-h3 {
-  margin: 0;
-  color: var(--text);
+/* Container for the entire popup */
+#solver-popup {
+  padding: 15px;
+  box-sizing: border-box;
 }
 
-p {
-  color: var(--text-muted);
-  line-height: 1.4;
-  font-size: 0.92rem;
-}
-
-a {
-  color: var(--accent);
-  text-decoration: none;
-  transition: var(--transition);
-}
-a:hover {
-  text-decoration: underline;
-}
-
-/* ---------- Disclaimer Screen ---------- */
-#disclaimerScreen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  background: var(--bg-secondary);
-  border-radius: var(--radius);
-  padding: 22px 20px;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+/* Header and Title */
+header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+  margin-bottom: 15px;
   text-align: center;
 }
 
-.disclaimer-header {
-  color: var(--accent);
+h1 {
+  font-size: 1.2em;
   font-weight: 600;
-  font-size: 1rem;
+  color: var(--accent);
+  margin: 0;
 }
 
-#disclaimerBox {
-  background: #181818;
-  border: 1px solid var(--border);
+/* Status Message */
+#status-message {
+  font-size: 0.95em;
+  font-weight: 500;
+  margin-bottom: 15px;
+  padding: 5px;
+  background-color: var(--bg-secondary);
   border-radius: var(--radius);
-  padding: 14px 18px;
-  text-align: left;
-  max-width: 340px;
-}
-
-#disclaimerBox p {
-  color: var(--text-muted);
-  margin-bottom: 10px;
-  font-size: 0.9rem;
-}
-
-/* Signature Section (Centered) */
-.signature-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
   text-align: center;
+}
+
+/* Toggle Button Styling */
+#toggle-bot {
   width: 100%;
-}
-
-.signature-wrapper label {
-  font-size: 0.9rem;
-  color: var(--text);
-}
-
-.signature-wrapper input[type="text"] {
-  width: 80%;
-  max-width: 280px;
-  background: #181818;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 6px 8px;
-  color: var(--text);
-  font-size: 0.9rem;
-  outline: none;
-}
-.signature-wrapper input[type="text"]:focus {
-  border-color: var(--accent);
-}
-
-/* ---------- Checkbox Agree (Inline, Centered) ---------- */
-.checkbox-agree {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  color: var(--text);
-  font-size: 0.9rem;
-  white-space: nowrap;
-}
-
-.checkbox-agree input[type="checkbox"] {
-  transform: scale(1.1);
-  accent-color: var(--accent);
-  margin: 0;
-}
-
-#agreeBtn {
-  margin-top: 10px;
-  padding: 10px 18px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  background: var(--accent);
+  padding: 10px 15px;
   border: none;
   border-radius: var(--radius);
-  color: white;
+  font-size: 1em;
+  font-weight: 700;
   cursor: pointer;
   transition: var(--transition);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
-#agreeBtn:hover {
-  filter: brightness(1.1);
+
+/* Active State (Button to Deactivate - remains Red) */
+#toggle-bot.inactive {
+  background-color: var(--inactive-color);
+  color: var(--text);
 }
-#agreeBtn:disabled {
-  background: #555;
+
+#toggle-bot.inactive:hover:not([disabled]) {
+  background-color: #e53935; /* Darker red */
+}
+
+/* Inactive State (Button to Activate - Baby Blue Accent) */
+#toggle-bot.active {
+  background-color: var(--accent); /* Now baby blue */
+  color: var(--bg); /* Dark text for contrast */
+}
+
+#toggle-bot.active:hover:not([disabled]) {
+  background-color: var(--accent-hover);
+}
+
+/* Disabled State */
+#toggle-bot[disabled] {
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
   cursor: not-allowed;
+  box-shadow: none;
 }
 
-/* ---------- Main Popup ---------- */
-#mainScreen {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  background: var(--bg-secondary);
-  border-radius: var(--radius);
-  padding: 20px;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
-}
-
-.logo {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
-  margin-bottom: 10px;
-  border: 2px solid var(--accent);
-}
-
-/* ---------- Subtitle ---------- */
-.subtitle {
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  line-height: 0.9;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-/* ---------- Switch + Status ---------- */
-#statusBox {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.switch {
-  position: relative;
-  width: 52px;
-  height: 26px;
-}
-.switch input {
-  display: none;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #555; /* gray when off */
-  transition: var(--transition);
-  border-radius: 34px;
-}
-.slider:before {
-  content: "";
-  position: absolute;
-  height: 20px;
-  width: 20px;
-  left: 3px;
-  bottom: 3px;
-  background-color: #ddd;
-  transition: var(--transition);
-  border-radius: 50%;
-}
-input:checked + .slider {
-  background-color: var(--accent); /* blue when ON */
-}
-input:checked + .slider:before {
-  transform: translateX(26px);
-}
-
-#statusText {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-}
-#statusText b {
-  color: var(--accent);
-}
-
-/* ---------- Stats Section ---------- */
-#statsBox {
-  background: #181818;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  width: 100%;
-  padding: 2px;
-  margin-top: 8px;
-}
-
-/* Stats Header + Info Icon */
-.stats-header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  position: relative;
-  overflow: visible;
-}
-
-#statsBox h3 {
-  color: var(--accent);
-  text-align: center;
-  font-size: 1rem;
-  margin-bottom: 10px;
-  overflow: visible;
-}
-
-/* ---------- Info Icon (Raised & Polished) ---------- */
-/* Wrapper for the img so ::after can render */
-.info-icon {
-  position: relative;
-  display: inline-block;
-  width: 15px;
-  height: 15px;
-  cursor: pointer;
-  top: -4px; /* raises icon slightly upward */
-}
-
-.info-icon img {
-  width: 100%;
-  height: 100%;
-  filter: invert(70%);
-  transition: filter 0.2s, transform 0.2s;
-  display: block;
-}
-
-.info-icon:hover img {
-  filter: invert(100%);
-  transform: translateY(-1px);
-}
-
-/* Tooltip on the wrapper */
-.info-icon::after {
-  min-width: 200px; /* ensure a wider box */
-  max-width: 360px; /* (optional) cap so it doesn't span the whole popup */
-  text-align: left; /* reads nicer for multi-line */
-  white-space: pre-wrap; /* keep \n but allow wrapping within long names */
-  line-height: 1rem;
-  overflow-wrap: anywhere; /* break super-long words if needed */
-  content: attr(data-tooltip);
-  position: absolute;
-  background: #1c1c1c;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  padding: 8px 10px;
-  font-size: 0.8rem;
-  top: -60px;
-  left: 50%;
-  transform: translateX(-50%) translateY(-2px);
-  white-space: pre-line; /* preserves \n line breaks */
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.25s ease, transform 0.2s ease;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-}
-
-.info-icon:hover::after {
-  opacity: 1;
-  transform: translateX(-50%) translateY(-4px);
-}
-
-/* two-line, two-column layout */
-.stats-grid {
-  display: flex;
-  justify-content: space-between;
-  margin: 6px 0;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-
-.stats-label {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-}
-
-.stat-item span:last-child {
-  color: var(--text);
-  font-weight: 600;
-  margin-top: 2px;
-  font-size: 0.9rem;
-}
-
-/* ---------- Session Info (Inline) ---------- */
-.session-info-inline {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  margin-top: 3px;
-  margin-bottom: 3px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
-}
-
-.session-info-inline span {
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.session-info-inline span:nth-child(2) {
-  opacity: 0.6;
-  font-weight: normal;
-}
-
-/* ---------- Bottom Buttons ---------- */
-#bottomButtons {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: nowrap;
-  width: 100%;
-  margin-top: 16px;
-  margin-bottom: 8px;
-}
-
-.action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 7px 12px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  background-color: #1e1e1e;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  text-decoration: none;
-  transition: var(--transition);
-  white-space: nowrap;
-  min-width: 150px;
-}
-
-.action-btn:hover {
-  background-color: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-
-.btn-icon {
-  width: 15px;
-  height: 15px;
-  display: inline-block;
-  vertical-align: middle;
-  filter: invert(70%);
-  transition: var(--transition);
-}
-
-.action-btn:hover .btn-icon {
-  filter: invert(100%);
-}
-
-/* ---------- Footer ---------- */
-footer {
+/* ---------- NEW ACTION BAR STYLES ---------- */
+.action-bar {
+  display: flex; /* Arrange items horizontally */
+  justify-content: space-between; /* Space them out */
+  gap: 8px; /* Gap between buttons */
   margin-top: 15px;
-  border-top: 1px solid var(--border);
   padding-top: 10px;
-  width: 100%;
+  border-top: 1px solid var(--border);
+}
+
+.action-button {
+  flex: 1; /* Make both buttons equal width */
+  text-decoration: none; /* Remove underline from link */
   text-align: center;
+  padding: 8px 5px;
+  border: none; /* Removed border */
+  border-radius: var(--radius);
+  font-size: 0.85em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+
+  /* UPDATED: Background to secondary dark, text to light text */
+  background-color: var(--bg-secondary);
+  color: var(--text);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); /* Subtle shadow */
+}
+
+.action-button:hover {
+  background-color: var(--bg); /* Darker on hover */
+  color: var(--text); /* Keep text light */
+  /* Added a subtle lift/glow effect on hover using accent for the glow */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.8), 0 0 5px rgba(100, 181, 246, 0.5); /* Soft baby blue glow */
+}
+/* ------------------------------------------- */
+
+/* Footer (Muted Text) */
+.footer {
+  margin-top: 10px; /* Reduced margin since action bar has padding */
+  text-align: center;
+}
+
+.footer p {
+  font-size: 0.8em;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  margin: 0;
+}
+
+/* Styling the footer anchor link */
+.developer-info a {
+  color: var(--accent); /* Baby blue accent */
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.developer-info a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* Emojis/Status Colors within the status message */
+#status-message .🟢 {
+  color: var(--active-color);
+}
+#status-message .🔴 {
+  color: var(--inactive-color);
+}
+
+/* Bolding within status message */
+#status-message strong {
+  font-weight: 700;
+  color: var(--accent); /* Highlight the main status text */
+}
+
+/* Description Styling for smaller font */
+.bot-header-description p {
+  /* Targeted the new header description element */
+  font-size: 0.8em;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 5px 0 0 0; /* Adjusted margin to fit below the main header */
+  padding: 0 5px;
+  text-align: center; /* Center alignment for description text */
+}
+
+/* Header icon styling */
+.header-logo {
+  height: 24px;
+  width: 24px;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+/* ---------- READ ME SCREEN STYLES ---------- */
+#readme-screen {
+  /* Ensures the readme takes up the full space */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.disclaimer-text {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 20px;
+  text-align: left;
+  color: var(--text); /* Set base text color to standard light text */
+}
+
+.disclaimer-text p {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 0.85em;
   line-height: 1.4;
 }
-footer a {
-  color: var(--accent);
+
+.disclaimer-text p:last-child {
+  margin-bottom: 0;
+  font-weight: 500;
+  /* Removed the color: var(--accent); rule here so it inherits the standard text color */
 }
-footer a:hover {
-  text-decoration: underline;
+
+.agreement-check {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  font-size: 0.9em;
+  color: var(--text);
+}
+
+.agreement-check input[type="checkbox"] {
+  margin-right: 10px;
+  height: 18px;
+  width: 18px;
+  cursor: pointer;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+}
+
+/* Continue Button (Enabled) */
+#continue-button {
+  width: 100%;
+  padding: 10px 15px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1em;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  background-color: var(--accent); /* Changed to baby blue accent */
+  color: var(--bg); /* Using dark text for contrast on accent */
+}
+
+#continue-button:hover:not([disabled]) {
+  background-color: var(--accent-hover);
+}
+
+/* Continue Button (Disabled) */
+#continue-button:disabled {
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.toggle-hint-text {
+  font-size: 0.75rem;
+  color: var(--text-muted); /* Assuming you use the muted text color */
+  text-align: center;
+  margin-top: 5px;
+  margin-bottom: 0;
 }

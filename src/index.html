@@ -1,117 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>McGraw-Hill Smart Book Solver</title>
-    <link rel="stylesheet" href="styles.css" />
+    <title>Important Info (Read Me)</title>
+    <link href="styles.css" rel="stylesheet" />
   </head>
   <body>
-    <!-- STEP 1: Disclaimer -->
-    <div id="disclaimerScreen" class="active">
-      <h1 class="project-title">McGraw-Hill Smart Book Solver</h1>
-      <h2 class="disclaimer-header">NOTICE: Terms Of Service</h2>
-      <div id="disclaimerBox">
-        <p>
-          This extension was built for
-          <strong>educational and demonstration</strong> purposes only. Using
-          automation on courseware may violate academic-integrity policies.
-        </p>
-        <p>
-          By proceeding, you acknowledge that the developer assumes
-          <strong>no liability</strong> for misuse, and that you alone are
-          responsible for your actions.
-        </p>
-      </div>
-
-      <div class="signature-wrapper">
-        <label for="fullName">Type your full name to acknowledge:</label>
-        <input
-          type="text"
-          id="fullName"
-          placeholder="Enter Your Full Name"
-          autocomplete="off"
-        />
-
-        <label class="checkbox-agree">
-          <input type="checkbox" id="agreeCheckbox" /> I have read and agree to
-          the terms above.
-        </label>
-
-        <button id="agreeBtn" disabled>I Agree & Understand</button>
-      </div>
-    </div>
-
-    <!-- STEP 2: Main Control Screen -->
-    <div id="mainScreen" style="display: none">
-      <img class="logo" src="./assets/logo.png" alt="Bot Logo" />
-      <h1 class="project-title">McGraw-Hill Smart Book Solver</h1>
-
-      <p class="subtitle">
-        Automatically solves McGrawHill SmartBook concept questions. Built for
-        educational purposes only. Use at your own discretion. Click the switch
-        below to activate or deactivate the smart book solver.
-      </p>
-
-      <!-- Toggle Switch & Status -->
-      <div id="statusBox">
-        <label class="switch">
-          <input type="checkbox" id="botToggle" />
-          <span class="slider"></span>
-        </label>
-        <span id="statusText">Status: <b style="color: #888">OFF</b></span>
-      </div>
-
-      <!-- Stats Section -->
-      <div id="statsBox">
-        <div class="stats-header">
-          <h3>My SmartBook Stats</h3>
-          <span id="infoIcon" class="info-icon" role="img" aria-label="Info">
-            <img src="icons/information-circle.svg" alt="Info" />
-          </span>
-        </div>
-
-        <!-- Session Stat -->
-        <div class="stats-grid">
-          <div class="stat-item">
-            <p>Solved in Session: <span id="statSolved">0</span></p>
+    <div id="solver-popup">
+      <!-- 1. READ ME SCREEN (Initially Visible) -->
+      <div id="readme-screen">
+        <header>
+          <h1>⚠️ Important Info (Read Me)</h1>
+        </header>
+        <div class="content">
+          <div class="disclaimer-text">
+            <p>
+              This tool was built strictly for
+              <strong>educational purposes</strong> only and to demonstrate the
+              vulnerabilities of certain online platforms. The developer
+              <strong>does not encourage or endorse academic dishonesty</strong>
+              or the violation of institutional policies.
+            </p>
+            <p>
+              By continuing and using this software, you
+              <strong>acknowledge and agree</strong> that the developer is
+              <strong>not liable</strong> for any consequences, academic
+              penalties, or damages resulting from your use of this tool. You
+              are solely responsible for adhering to your institution's rules.
+            </p>
           </div>
-          <div class="stat-item">
-            <p>Total Solved: <span id="statAllTimeSolved">0</span></p>
+
+          <div class="agreement-check">
+            <input type="checkbox" id="agree-checkbox" />
+            <label for="agree-checkbox"
+              >I agree and acknowledge the developer's non-liability.</label
+            >
           </div>
+
+          <button id="continue-button" disabled>Continue to Solver</button>
         </div>
       </div>
 
-      <!-- Bottom Buttons -->
-      <div id="bottomButtons">
-        <a
-          href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver/releases/latest/download/McGraw-Hill-SmartBook-Solver.zip"
-          target="_blank"
-          class="action-btn"
-        >
-          <img src="icons/download.svg" class="btn-icon" />
-          Download Extension
-        </a>
+      <!-- 2. MAIN SOLVER SCREEN (Initially Hidden, Shown After Agreement) -->
+      <div id="main-screen" style="display: none">
+        <header>
+          <!-- The title and logo will be injected/updated by index.js after agreement -->
+          <h1 id="main-header-title"></h1>
+        </header>
+        <div class="content">
+          <div class="bot-header-description">
+            <p>
+              Automatically solves McGrawHill SmartBook concept questions. Built
+              for educational purposes only. Use at your own discretion.
+            </p>
+          </div>
+          <p id="status-message">
+            Bot Status: <strong>Checking Storage...</strong>
+          </p>
+          <button id="toggle-bot" disabled>Toggle Bot</button>
 
-        <a
-          href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver#installation-and-usage-guide"
-          target="_blank"
-          class="action-btn"
-        >
-          <img src="icons/help-circle.svg" class="btn-icon" />
-          Installation / Useage Guide
-        </a>
+          <!-- NEW HINT TEXT ADDED HERE -->
+          <p class="toggle-hint-text">
+            If the on/off button doesn't work, refresh the SmartBook site and
+            try again.
+          </p>
+        </div>
+
+        <div class="action-bar">
+          <a
+            href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver/releases/latest/download/McGraw-Hill-SmartBook-Solver.zip"
+            target="_blank"
+            id="download-extension"
+            class="action-button"
+          >
+            ⬇️ Download Extension
+          </a>
+          <a
+            href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver#installation-and-usage-guide"
+            target="_blank"
+            id="how-to-use"
+            class="action-button"
+          >
+            📖 How To Use
+          </a>
+        </div>
+
+        <div class="footer">
+          <!-- 📝 UPDATED: Developer info and portfolio link added -->
+          <p class="developer-info">
+            Built by: <strong>Kevin Huy Trinh</strong> |
+            <a href="https://www.kevintrinh.dev" target="_blank"
+              >www.kevintrinh.dev</a
+            >
+          </p>
+        </div>
       </div>
-
-      <footer>
-        Built by: Kevin Trinh •
-        <a href="https://www.kevintrinh.dev" target="_blank"
-          >www.kevintrinh.dev</a
-        ><br />
-        © 2025 • Educational Use Only
-      </footer>
     </div>
-
     <script src="index.js"></script>
   </body>
 </html>

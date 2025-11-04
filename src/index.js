@@ -1,233 +1,225 @@
-/**
- * McGrawHill Concepts Bot - Popup Script
- * ---------------------------------------
- * Handles popup UI logic for the Chrome extension.
- * Features:
- *  - One-time disclaimer with full name + signature
- *  - Persistent ON/OFF state across popup openings
- *  - Session start time + live uptime tracker (inline)
- *  - Session & all-time stats updated in real-time
- */
+document.addEventListener("DOMContentLoaded", () => {
+  // --- Screen Elements ---
+  const readmeScreen = document.getElementById("readme-screen");
+  const mainScreen = document.getElementById("main-screen");
+  const mainHeaderTitle = document.getElementById("main-header-title");
 
-document.addEventListener("DOMContentLoaded", async () => {
-  // ---------- ELEMENT REFERENCES ----------
-  const disclaimerScreen = document.getElementById("disclaimerScreen");
-  const mainScreen = document.getElementById("mainScreen");
-  const agreeCheckbox = document.getElementById("agreeCheckbox");
-  const agreeBtn = document.getElementById("agreeBtn");
-  const statusText = document.getElementById("statusText");
-  const nameInput = document.getElementById("fullName");
-  const infoIcon = document.getElementById("infoIcon");
+  // --- ReadMe Elements ---
+  const agreeCheckbox = document.getElementById("agree-checkbox");
+  const continueButton = document.getElementById("continue-button");
 
-  const statAllTimeSolved = document.getElementById("statAllTimeSolved");
-  const statSolved = document.getElementById("statSolved");
+  // --- Main Screen Elements ---
+  const statusMessage = document.getElementById("status-message");
+  const toggleButton = document.getElementById("toggle-bot");
 
-  // ---------- CREATE INLINE SESSION INFO ----------
-  const sessionInfoBox = document.createElement("div");
-  sessionInfoBox.className = "session-info-inline";
-  const sessionStartElem = document.createElement("span");
-  const divider = document.createElement("span");
-  const sessionUptimeElem = document.createElement("span");
+  const AGREEMENT_KEY = "hasAgreedToDisclaimer";
+  const MAIN_HEADER_HTML =
+    '<img src="logo.png" alt="Extension Icon" class="header-logo"> McGraw-Hill SmartBook Solver';
 
-  divider.style.margin = "0 6px";
-  divider.style.opacity = "0.6";
+  // Define the target URL pattern for enabling the toggle button
+  const TARGET_URL_PATTERN = "mheducation.com";
 
-  sessionInfoBox.appendChild(sessionStartElem);
-  sessionInfoBox.appendChild(divider);
-  sessionInfoBox.appendChild(sessionUptimeElem);
-
-  infoIcon.removeAttribute("title");
-
-  const statusBox = document.getElementById("statusBox");
-  statusBox.after(sessionInfoBox);
-
-  let uptimeInterval = null;
-
-  // ---------- HELPERS ----------
-  const formatNumber = (num) => {
-    if (num == null || isNaN(num)) return "0";
-    if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + "M";
-    if (num >= 1_000) return (num / 1_000).toFixed(1) + "k";
-    return num.toString();
-  };
-
-  const updateStatsUI = (stats, allTime) => {
-    statSolved.textContent = stats.solved;
-    statAllTimeSolved.textContent = formatNumber(allTime.solved);
-  };
-
-  const formatTime = (ms) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hrs = Math.floor(totalSeconds / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-    if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
-    if (mins > 0) return `${mins}m ${secs}s`;
-    return `${secs}s`;
-  };
-
-  const startUptimeTimer = (startTime) => {
-    clearInterval(uptimeInterval);
-    const start = new Date(startTime);
-
-    const update = () => {
-      const diff = Date.now() - start.getTime();
-      sessionStartElem.textContent = `Start Time: ${start.toLocaleTimeString()}`;
-      sessionUptimeElem.textContent = `Uptime: ${formatTime(diff)}`;
-    };
-
-    update();
-    uptimeInterval = setInterval(update, 1000);
-  };
-
-  const stopUptimeTimer = () => {
-    clearInterval(uptimeInterval);
-    sessionStartElem.textContent = "";
-    sessionUptimeElem.textContent = "";
-  };
-
-  // ---------- LOAD STATE ----------
-  chrome.storage.local.get(
-    [
-      "stats",
-      "allTime",
-      "botEnabled",
-      "sessionStart",
-      "userAcceptedDisclaimer",
-    ],
-    (result) => {
-      const stats = result.stats || { solved: 0, attempted: 0 };
-      const allTime = result.allTime || { solved: 0, attempted: 0 };
-      const botEnabled = result.botEnabled || false;
-      const sessionStart = result.sessionStart || null;
-      const accepted = result.userAcceptedDisclaimer || null;
-
-      updateStatsUI(stats, allTime);
-
-      // if disclaimer was already signed → skip permanently
-      if (accepted && accepted.name) {
-        disclaimerScreen.style.display = "none";
-        mainScreen.style.display = "flex";
-        const toggle = document.getElementById("botToggle");
-        attachToggleListener(toggle);
-
-        const { name: aName, agreed: aAgreed, timestamp: aTs } = accepted;
-        infoIcon.setAttribute(
-          "data-tooltip",
-          `Signed User: ${aName}\nAgreed to TOS: ${
-            aAgreed ? "True" : "False"
-          }\nSigned: ${new Date(aTs).toLocaleString()}`
-        );
-      }
-
-      // if bot currently ON → restore
-      if (botEnabled) {
-        disclaimerScreen.style.display = "none";
-        mainScreen.style.display = "flex";
-        const toggle = document.getElementById("botToggle");
-        toggle.checked = true;
-        statusText.innerHTML = "Status: <b style='color:#64b5f6'>ON</b>";
-        if (sessionStart) startUptimeTimer(sessionStart);
-        attachToggleListener(toggle);
-      }
-    }
-  );
-
-  // ---------- DISCLAIMER HANDLING ----------
-  function validateDisclaimerInputs() {
-    const nameFilled = nameInput.value.trim().length > 1;
-    const checked = agreeCheckbox.checked;
-    agreeBtn.disabled = !(nameFilled && checked);
+  // Helper function for delays
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  nameInput.addEventListener("input", validateDisclaimerInputs);
-  agreeCheckbox.addEventListener("change", validateDisclaimerInputs);
+  // --- Screen Switching Logic ---
 
-  agreeBtn.addEventListener("click", () => {
-    const name = nameInput.value.trim();
-    const agreed = agreeCheckbox.checked;
-    if (!name || !agreed) return;
+  function showMainScreen() {
+    // Correctly saves the agreement status to storage
+    chrome.storage.local.set({ [AGREEMENT_KEY]: true });
+    document.title = "McGraw-Hill SmartBook Solver";
+    mainHeaderTitle.innerHTML = MAIN_HEADER_HTML;
+    readmeScreen.style.display = "none";
+    mainScreen.style.display = "block";
 
-    const timestamp = new Date().toISOString();
+    // Resume original solver initialization/status check
+    checkBotStatusAndInitUI();
+  }
 
-    // Save one-time consent
-    chrome.storage.local.set({
-      userAcceptedDisclaimer: { name, agreed, timestamp },
-    });
+  function showReadMeScreen() {
+    document.title = "Important Info (Read Me)";
+    mainScreen.style.display = "none";
+    readmeScreen.style.display = "block";
+  }
 
-    // Tooltip setup immediately
-    infoIcon.setAttribute(
-      "data-tooltip",
-      `User: ${name}\nAgreed to TOS: ${
-        agreed ? "True" : "False"
-      }\nSigned: ${new Date(timestamp).toLocaleString()}`
-    );
+  // --- ReadMe Event Handlers ---
 
-    // Hide disclaimer permanently
-    disclaimerScreen.style.display = "none";
-    mainScreen.style.display = "flex";
-
-    const toggle = document.getElementById("botToggle");
-    attachToggleListener(toggle);
+  agreeCheckbox.addEventListener("change", () => {
+    continueButton.disabled = !agreeCheckbox.checked;
   });
 
-  // ---------- TOGGLE HANDLER ----------
-  function attachToggleListener(toggle) {
-    if (!toggle) return;
+  continueButton.addEventListener("click", () => {
+    if (agreeCheckbox.checked) {
+      showMainScreen();
+    }
+  });
 
-    toggle.addEventListener("change", () => {
-      const isOn = toggle.checked;
-      const color = isOn ? "#64b5f6" : "#888";
-      statusText.innerHTML = `Status: <b style="color:${color}">${
-        isOn ? "ON" : "OFF"
-      }</b>`;
+  // --- Bot Logic Functions ---
 
-      // persist ON/OFF
-      chrome.storage.local.set({ botEnabled: isOn });
+  function updateUI(isEnabled) {
+    // This function now only handles the visual state based on the global setting
+    // It is called when we ARE on the target page.
+    toggleButton.disabled = false;
 
-      if (isOn) {
-        const sessionStart = Date.now();
-        chrome.storage.local.set({ sessionStart });
+    if (isEnabled) {
+      statusMessage.innerHTML = "Bot Status: <strong>ACTIVE 🟢</strong>";
+      toggleButton.textContent = "❌ Deactivate Bot";
+      toggleButton.className = "inactive";
+    } else {
+      statusMessage.innerHTML = "Bot Status: <strong>INACTIVE 🔴</strong>";
+      toggleButton.textContent = "🚀 Activate Bot";
+      toggleButton.className = "active";
+    }
+  }
 
-        startUptimeTimer(sessionStart);
+  // 🔑 UPDATED: Takes the current bot state as an argument
+  function handleNotOnTargetPage(isBotEnabled) {
+    // Disable the button and show a helpful message
+    toggleButton.disabled = true;
+    toggleButton.textContent = "Must be on McGraw-Hill site to Toggle on/off";
+    toggleButton.className = ""; // Remove active/inactive classes for neutral look
 
-        chrome.storage.local.get(["allTime"], (res) => {
-          const allTime = res.allTime || { solved: 0, attempted: 0 };
-          chrome.storage.local.set({
-            stats: { solved: 0, attempted: 0 },
-            allTime,
-          });
-        });
+    // 🔑 NEW LOGIC: Display the actual global status, but indicate the button is locked
+    if (isBotEnabled) {
+      statusMessage.innerHTML =
+        "Bot Status: <strong>ACTIVE 🟢 (Running in Background)</strong>";
+    } else {
+      statusMessage.innerHTML = "Bot Status: <strong>INACTIVE 🔴</strong>";
+    }
+  }
 
-        statSolved.textContent = "0"; // ✅ keep this
-      } else {
-        stopUptimeTimer();
-        chrome.storage.local.remove("sessionStart");
+  // 🔑 MODIFIED: Targets only the active tab that is relevant, and injects script if needed.
+  // Now uses retry logic for reliable activation.
+  async function sendBotCommand(action) {
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      const activeTab = tabs[0];
+
+      if (
+        !activeTab ||
+        !activeTab.url ||
+        !activeTab.url.includes(TARGET_URL_PATTERN)
+      ) {
+        console.log("Not on the target McGraw-Hill site.");
+        return;
       }
 
-      // Send message to active tab
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (!tabs.length) return;
-        chrome.scripting.executeScript({
-          target: { tabId: tabs[0].id },
-          func: (isOn) => {
-            window.postMessage(
-              { type: isOn ? "START_SOLVER" : "STOP_SOLVER" },
-              "*"
+      let scriptInjected = false;
+      const MAX_RETRIES = 5;
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          // 1. Try to send the message
+          await new Promise((resolve, reject) => {
+            chrome.tabs.sendMessage(activeTab.id, action, (response) => {
+              if (chrome.runtime.lastError) {
+                // Reject the promise if there is an error
+                reject(chrome.runtime.lastError);
+              } else {
+                resolve(response);
+              }
+            });
+          });
+          // If successful, break the retry loop
+          return;
+        } catch (error) {
+          const errorMsg = error.message;
+
+          // 2. Check if the error means the content script is not running
+          if (
+            errorMsg.includes("Could not establish connection") &&
+            !scriptInjected
+          ) {
+            console.log(
+              `Attempt ${attempt}: Content script not running. Injecting contentSolver.js.`
             );
-          },
-          args: [isOn],
-        });
+
+            // NOTE: Using contentSolver.js as per the manifest fix.
+            await chrome.scripting.executeScript({
+              target: { tabId: activeTab.id },
+              files: ["contentSolver.js"],
+            });
+
+            scriptInjected = true;
+          } else if (
+            errorMsg.includes("Could not establish connection") &&
+            scriptInjected
+          ) {
+            // Script is injected but still not ready; continue retry loop
+            console.log(
+              `Attempt ${attempt}: Script injected but listener not ready. Retrying...`
+            );
+          } else {
+            // Log other unexpected errors and stop retrying
+            console.warn(
+              "Warning: Message failed to send with unexpected error:",
+              errorMsg
+            );
+            return;
+          }
+
+          // Wait before the next attempt
+          await sleep(200);
+        }
+      }
+
+      console.error("Failed to send bot command after all retries.");
+    });
+  }
+
+  // Separate handler function for cleaner removal/re-adding of listener
+  const toggleBotHandler = () => {
+    // Check if the button is currently disabled by our logic before proceeding
+    if (toggleButton.disabled) {
+      return;
+    }
+
+    const isCurrentlyActive = toggleButton.className === "inactive";
+    const newAction = isCurrentlyActive ? "deactivate" : "activate";
+    const newState = !isCurrentlyActive;
+
+    // 1. Update the local UI state first
+    updateUI(newState);
+
+    // 2. Send the command to the active tab (which will also update the global storage state)
+    sendBotCommand(newAction);
+  };
+
+  function checkBotStatusAndInitUI() {
+    // 1. Ensure any old listener is removed before proceeding
+    toggleButton.removeEventListener("click", toggleBotHandler);
+
+    // 2. Check the current active tab's URL
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const currentUrl = tabs[0]?.url || "";
+
+      // 3. Load initial status from storage (global state)
+      chrome.storage.local.get("isBotEnabled", (storageResult) => {
+        const isBotEnabled = storageResult.isBotEnabled === true;
+
+        if (currentUrl.includes(TARGET_URL_PATTERN)) {
+          // On target page: Update UI to show global status and make button clickable
+          updateUI(isBotEnabled);
+          // 4. Add the click listener (runs after status check due to event loop)
+          toggleButton.addEventListener("click", toggleBotHandler);
+        } else {
+          // Not on target page: Inform user, show the state, and disable the button
+          // 🔑 PASSING isBotEnabled HERE
+          handleNotOnTargetPage(isBotEnabled);
+        }
       });
     });
   }
 
-  // ---------- LIVE STATS UPDATE ----------
-  chrome.storage.onChanged.addListener(() => {
-    chrome.storage.local.get(["stats", "allTime"], (res) => {
-      const stats = res.stats || { solved: 0, attempted: 0 };
-      const allTime = res.allTime || { solved: 0, attempted: 0 };
-      updateStatsUI(stats, allTime);
-    });
+  // --- Initialization ---
+
+  // Check if the user has previously agreed
+  chrome.storage.local.get(AGREEMENT_KEY, (result) => {
+    if (result[AGREEMENT_KEY]) {
+      showMainScreen();
+    } else {
+      showReadMeScreen();
+    }
   });
 });

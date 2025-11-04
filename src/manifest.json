@@ -1,40 +1,32 @@
 {
-  "manifest_version": 3,
-  "name": "McGraw-Hill SmartBook Solver",
-  "description": "Automatically interacts with McGraw-Hill SmartBook concept questions (educational use only).",
-  "version": "2.0.0",
-  "author": "Kevin Trinh",
-  "homepage_url": "https://www.kevintrinh.dev",
-
   "action": {
     "default_popup": "index.html",
-    "default_title": "McGraw-Hill SmartBook Solver"
+    "default_title": "Open the popup"
   },
-
-  "background": { "service_worker": "serviceCore.js" },
-  "permissions": ["storage", "scripting", "activeTab"],
-  "host_permissions": [
-    "https://k59op4dxx4.execute-api.us-west-1.amazonaws.com/*"
-  ],
-
+  "background": {
+    "service_worker": "serviceCore.js"
+  },
   "content_scripts": [
     {
-      "matches": ["*://learning.mheducation.com/*"],
       "js": ["contentSolver.js", "answerOverlay.js"],
-      "run_at": "document_idle"
-    }
-  ],
-
-  "web_accessible_resources": [
-    {
-      "resources": ["./assets/logo.png"],
       "matches": ["*://learning.mheducation.com/*"]
     }
   ],
-
   "icons": {
-    "16": "./assets/logo.png",
-    "48": "./assets/logo.png",
-    "128": "./assets/logo.png"
-  }
+    "128": "logo.png",
+    "16": "logo.png",
+    "48": "logo.png"
+  },
+  "manifest_version": 3,
+  "name": "McGraw-Hill SmartBook Solver",
+  "description": "Automatically interacts with McGraw-Hill SmartBook concept questions (educational use only).",
+  "permissions": ["activeTab", "storage", "scripting"],
+  "host_permissions": ["*://learning.mheducation.com/*"],
+  "version": "3.0.0",
+  "web_accessible_resources": [
+    {
+      "resources": ["contentSolver.js"],
+      "matches": ["*://learning.mheducation.com/*"]
+    }
+  ]
 }
