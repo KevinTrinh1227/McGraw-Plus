@@ -25,7 +25,7 @@
     "*://learning.mheducation.com/*",
     "https://api.github.com/*"
   ],
-  "version": "3.1.1",
+  "version": "3.1.2",
   "web_accessible_resources": [
     {
       "resources": ["contentSolver.js"],

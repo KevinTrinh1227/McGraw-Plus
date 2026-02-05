@@ -328,13 +328,27 @@ async function selectCorrectResponse(question, responses, responseElements) {
     let answers = [];
 
     if (isFillInBlankQuestion) {
-      let answerElements = document.getElementsByClassName("correct-answers");
-      console.log("S: Found", answerElements.length, "correct-answers elements");
-      for (let x = 0; x < answerElements.length; x++) {
-        const correctAnswerEl = answerElements[x].querySelector(".correct-answer");
-        if (correctAnswerEl) {
-          // Get the text content and trim, but preserve the full answer
-          const text = correctAnswerEl.textContent.trim();
+      // Each .correct-answers element corresponds to one blank
+      // Each can have MULTIPLE .correct-answer spans (acceptable alternatives)
+      let answerContainers = document.getElementsByClassName("correct-answers");
+      console.log("S: Found", answerContainers.length, "correct-answers containers (blanks)");
+
+      for (let x = 0; x < answerContainers.length; x++) {
+        // Get ALL acceptable answers for this blank
+        const correctAnswerEls = answerContainers[x].querySelectorAll(".correct-answer");
+        console.log("S: Blank", x, "has", correctAnswerEls.length, "acceptable answers");
+
+        if (correctAnswerEls.length > 0) {
+          // Take the first acceptable answer (they're all valid, just pick one)
+          // Clean up: remove trailing commas, "or", and extra whitespace
+          let text = correctAnswerEls[0].textContent;
+          // Remove nested separator spans content
+          const separator = correctAnswerEls[0].querySelector(".separator");
+          if (separator) {
+            text = text.replace(separator.textContent, "");
+          }
+          // Clean trailing punctuation and whitespace
+          text = text.replace(/[,\s]+$/, "").trim();
           console.log("S: Fill-in-blank answer", x, ":", text);
           if (text) {
             answers.push(text);

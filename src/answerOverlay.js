@@ -96,11 +96,19 @@ function highlighter() {
         let answerElements = document.getElementsByClassName("correct-answers");
         let answers = [];
         if (answerElements.length != 0) {
+            // Each .correct-answers is one blank, may have multiple acceptable .correct-answer spans
             for (let x = 0; x < answerElements.length; x++) {
-                const el = answerElements[x].getElementsByClassName("correct-answer")[0];
-                if (el) {
-                    // Preserve full answer text, just trim whitespace
-                    const text = el.textContent.trim();
+                const correctAnswerEls = answerElements[x].getElementsByClassName("correct-answer");
+                if (correctAnswerEls.length > 0) {
+                    // Take the first acceptable answer
+                    let text = correctAnswerEls[0].textContent;
+                    // Remove separator span content if present
+                    const separator = correctAnswerEls[0].querySelector(".separator");
+                    if (separator) {
+                        text = text.replace(separator.textContent, "");
+                    }
+                    // Clean trailing punctuation
+                    text = text.replace(/[,\s]+$/, "").trim();
                     if (text) {
                         answers.push(text);
                     }
