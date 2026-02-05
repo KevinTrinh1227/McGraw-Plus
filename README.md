@@ -8,6 +8,9 @@
   </a>
   <img src="https://img.shields.io/github/downloads/KevinTrinh1227/McGraw-Plus/total?label=Downloads&style=flat-square" alt="Downloads">
   <img src="https://img.shields.io/github/stars/KevinTrinh1227/McGraw-Plus?label=Stars&style=flat-square" alt="Stars">
+  <a href="https://github.com/KevinTrinh1227/McGraw-Plus/actions/workflows/virustotal-scan.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/KevinTrinh1227/McGraw-Plus/virustotal-scan.yml?label=Security%20Scan&style=flat-square" alt="Security Scan">
+  </a>
 </p>
 
 <p align="center">
@@ -109,6 +112,20 @@ window.__mcgrawPlusCaptures        // View all captured data
 ```
 
 See [Data Capture Guide](docs/SCRAPING.md) for full API documentation.
+
+---
+
+## Security
+
+Every release is automatically scanned with [VirusTotal](https://www.virustotal.com/) using 70+ antivirus engines.
+
+| Check | Status |
+|-------|--------|
+| Automated Scanning | ✅ On every release |
+| Open Source | ✅ 100% auditable code |
+| Data Collection | ✅ None - runs locally |
+
+Scan results are automatically added to each [release](https://github.com/KevinTrinh1227/McGraw-Plus/releases). You can also [verify any release yourself](https://www.virustotal.com/gui/home/upload) by uploading the `.zip` file.
 
 ---
 
