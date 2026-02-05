@@ -64,6 +64,13 @@
           </svg>
           <span>Export</span>
         </button>
+        <button class="nav-item dev-only hidden" data-tab="dev">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
+          <span>Dev Tools</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -85,6 +92,7 @@
         </div>
         <div class="header-right">
           <span id="user-greeting" class="user-greeting"></span>
+          <span id="dev-badge" class="dev-badge hidden">DEV</span>
         </div>
       </header>
 
@@ -503,7 +511,47 @@
             </div>
           </div>
         </section>
+
+        <!-- Dev Mode Section (hidden by default) -->
+        <section id="tab-dev" class="tab-panel dev-only hidden">
+          <div class="dev-section">
+            <h2>Developer Tools</h2>
+            <p class="dev-desc">These tools are only visible in dev mode.</p>
+
+            <div class="dev-grid">
+              <div class="dev-card">
+                <h3>Storage Inspector</h3>
+                <pre id="storage-dump" class="code-block">Loading...</pre>
+                <button id="refresh-storage" class="btn small outline">Refresh</button>
+              </div>
+
+              <div class="dev-card">
+                <h3>Quick Actions</h3>
+                <button id="clear-star-verification" class="btn small outline full">Clear Star Verification</button>
+                <button id="clear-terms" class="btn small outline full">Clear Terms Accepted</button>
+                <button id="toggle-extension" class="btn small outline full">Toggle Extension</button>
+                <button id="export-all-data" class="btn small primary full">Export All Data</button>
+              </div>
+
+              <div class="dev-card">
+                <h3>Test Data</h3>
+                <button id="add-test-assignments" class="btn small outline full">Add Test Assignments</button>
+                <button id="add-test-stats" class="btn small outline full">Add Test Stats</button>
+                <button id="add-test-flashcards" class="btn small outline full">Add Test Flashcards</button>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
+
+      <!-- Footer -->
+      <footer class="dashboard-footer">
+        <span>McGraw Plus v<span id="footer-version">2.0.0</span></span>
+        <span class="footer-divider">•</span>
+        <a href="https://github.com/KevinTrinh1227/McGraw-Plus" target="_blank">GitHub</a>
+        <span class="footer-divider">•</span>
+        <a href="https://github.com/KevinTrinh1227/McGraw-Plus/issues" target="_blank">Report Issue</a>
+      </footer>
     </main>
   </div>
 

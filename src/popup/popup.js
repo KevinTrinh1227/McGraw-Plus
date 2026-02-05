@@ -1,6 +1,6 @@
 /**
  * McGraw Plus - Popup Script
- * Clean, minimal UI with kill switch and dev mode support
+ * Clean, minimal UI with power toggle, star verification, and settings
  */
 
 (function () {
@@ -11,6 +11,8 @@
     VERSION_URL: 'https://raw.githubusercontent.com/KevinTrinh1227/McGraw-Plus/main/version.json',
     REPO_URL: 'https://github.com/KevinTrinh1227/McGraw-Plus',
     RELEASES_URL: 'https://github.com/KevinTrinh1227/McGraw-Plus/releases/latest',
+    REPO_OWNER: 'KevinTrinh1227',
+    REPO_NAME: 'McGraw-Plus',
     CHECK_INTERVAL: 3600000, // 1 hour
   };
 
@@ -24,6 +26,12 @@
     LLM_ENABLED: 'sbs_llm_enabled',
     LLM_PROVIDER: 'sbs_llm_provider',
     LLM_API_KEY: 'sbs_llm_api_key',
+    EXTENSION_ENABLED: 'mp_extension_enabled',
+    STAR_VERIFIED: 'mp_star_verified',
+    STAR_USERNAME: 'mp_star_username',
+    TERMS_ACCEPTED: 'mp_terms_accepted',
+    USER_NAME: 'mp_user_name',
+    ONBOARDING_COMPLETE: 'mp_onboarding_complete',
   };
 
   // DOM Elements
@@ -36,10 +44,17 @@
     blockTitle: $('block-title'),
     blockMessage: $('block-message'),
     blockBtn: $('block-btn'),
+    termsOverlay: $('terms-overlay'),
+    termsNameInput: $('terms-name-input'),
+    acceptTermsBtn: $('accept-terms-btn'),
     // Header
     helpBtn: $('help-btn'),
     shareBtn: $('share-btn'),
     settingsBtn: $('settings-btn'),
+    // Main view
+    userGreeting: $('user-greeting'),
+    powerToggle: $('power-toggle'),
+    powerStatus: $('power-status'),
     // Views
     mainView: $('main-view'),
     settingsView: $('settings-view'),
@@ -52,7 +67,13 @@
     statQuestions: $('stat-questions'),
     statCorrect: $('stat-correct'),
     statStreak: $('stat-streak'),
-    // Main toggles
+    // Star verification
+    starCard: $('star-card'),
+    starVerifiedBadge: $('star-verified-badge'),
+    githubUsername: $('github-username'),
+    verifyStarBtn: $('verify-star-btn'),
+    starStatus: $('star-status'),
+    // Main toggles (now in settings)
     toggleDarkMode: $('toggle-dark-mode'),
     toggleKeyboard: $('toggle-keyboard'),
     // Settings toggles
@@ -61,6 +82,9 @@
     settingProgressBar: $('setting-progress-bar'),
     settingTabTitle: $('setting-tab-title'),
     settingAntiCopy: $('setting-anti-copy'),
+    // Profile
+    profileName: $('profile-name'),
+    saveProfileBtn: $('save-profile-btn'),
     // Webhook
     webhookUrl: $('webhook-url'),
     saveWebhookBtn: $('save-webhook-btn'),
@@ -76,7 +100,13 @@
     storageSize: $('storage-size'),
     exportDataBtn: $('export-data-btn'),
     clearDataBtn: $('clear-data-btn'),
+    // Reset
+    redoOnboardingBtn: $('redo-onboarding-btn'),
+    resyncDataBtn: $('resync-data-btn'),
+    resetAllBtn: $('reset-all-btn'),
+    // Version
     version: $('version'),
+    footerVersion: $('footer-version'),
     // Share
     copyLinkBtn: $('copy-link-btn'),
     // Dashboard
@@ -92,8 +122,12 @@
   async function init() {
     showVersion();
     await checkBlockStatus();
+    await checkTermsAccepted();
     await loadSettings();
     await loadStats();
+    await loadUserProfile();
+    await loadStarStatus();
+    await loadPowerStatus();
     loadWebhookSettings();
     loadLlmSettings();
     loadStorageInfo();
@@ -107,6 +141,17 @@
   function showVersion() {
     const version = chrome.runtime.getManifest().version;
     if (el.version) el.version.textContent = version;
+    if (el.footerVersion) el.footerVersion.textContent = version;
+  }
+
+  /**
+   * Check if terms have been accepted
+   */
+  async function checkTermsAccepted() {
+    const result = await chrome.storage.local.get(KEYS.TERMS_ACCEPTED);
+    if (!result[KEYS.TERMS_ACCEPTED]) {
+      el.termsOverlay.classList.remove('hidden');
+    }
   }
 
   /**
@@ -114,18 +159,15 @@
    */
   async function checkBlockStatus() {
     try {
-      // Check cached block data first
       const cached = await chrome.storage.local.get([KEYS.BLOCK_DATA, KEYS.LAST_VERSION_CHECK]);
       const now = Date.now();
       const lastCheck = cached[KEYS.LAST_VERSION_CHECK] || 0;
 
-      // Use cached data if recent
       if (cached[KEYS.BLOCK_DATA] && (now - lastCheck < CONFIG.CHECK_INTERVAL)) {
         handleBlockData(cached[KEYS.BLOCK_DATA]);
         return;
       }
 
-      // Fetch fresh version data
       const response = await fetch(CONFIG.VERSION_URL, {
         signal: AbortSignal.timeout(5000),
         cache: 'no-store',
@@ -145,12 +187,10 @@
         downloadUrl: data.downloadUrl || CONFIG.RELEASES_URL,
       };
 
-      // Check if current version is below minimum
       if (compareVersions(currentVersion, blockData.minVersion) < 0) {
         blockData.forceUpdate = true;
       }
 
-      // Cache the data
       await chrome.storage.local.set({
         [KEYS.BLOCK_DATA]: blockData,
         [KEYS.LAST_VERSION_CHECK]: now,
@@ -158,7 +198,6 @@
 
       handleBlockData(blockData);
     } catch (error) {
-      // Network error - use cached data or allow
       const cached = await chrome.storage.local.get(KEYS.BLOCK_DATA);
       if (cached[KEYS.BLOCK_DATA]) {
         handleBlockData(cached[KEYS.BLOCK_DATA]);
@@ -190,7 +229,6 @@
       return;
     }
 
-    // Not blocked
     el.blockOverlay.classList.add('hidden');
   }
 
@@ -232,17 +270,210 @@
   }
 
   /**
+   * Load power status
+   */
+  async function loadPowerStatus() {
+    const result = await chrome.storage.local.get(KEYS.EXTENSION_ENABLED);
+    const isEnabled = result[KEYS.EXTENSION_ENABLED] === true;
+    updatePowerUI(isEnabled);
+  }
+
+  /**
+   * Update power toggle UI
+   */
+  function updatePowerUI(isEnabled) {
+    el.powerToggle.classList.toggle('active', isEnabled);
+    el.powerStatus.textContent = isEnabled ? 'On' : 'Off';
+    el.powerStatus.classList.toggle('on', isEnabled);
+    el.powerStatus.classList.toggle('off', !isEnabled);
+  }
+
+  /**
+   * Toggle power
+   */
+  async function togglePower() {
+    const result = await chrome.storage.local.get(KEYS.EXTENSION_ENABLED);
+    const newState = !result[KEYS.EXTENSION_ENABLED];
+    await chrome.storage.local.set({ [KEYS.EXTENSION_ENABLED]: newState });
+    updatePowerUI(newState);
+
+    // Notify content scripts
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0]) {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        type: newState ? 'SOLVER_ACTIVATE' : 'SOLVER_DEACTIVATE',
+      }).catch(() => {});
+    }
+
+    showToast(newState ? 'Extension enabled' : 'Extension disabled');
+  }
+
+  /**
+   * Get time-based greeting
+   */
+  function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  /**
+   * Load user profile
+   */
+  async function loadUserProfile() {
+    const result = await chrome.storage.local.get(KEYS.USER_NAME);
+    const userName = result[KEYS.USER_NAME];
+
+    if (userName) {
+      el.userGreeting.classList.remove('hidden');
+      el.userGreeting.textContent = `${getGreeting()}, ${userName}`;
+      if (el.profileName) el.profileName.value = userName;
+    } else {
+      el.userGreeting.classList.add('hidden');
+    }
+  }
+
+  /**
+   * Load star verification status
+   */
+  async function loadStarStatus() {
+    const result = await chrome.storage.local.get([KEYS.STAR_VERIFIED, KEYS.STAR_USERNAME]);
+
+    if (result[KEYS.STAR_VERIFIED]) {
+      el.starCard.classList.add('hidden');
+      el.starVerifiedBadge.classList.remove('hidden');
+      if (result[KEYS.STAR_USERNAME]) {
+        el.githubUsername.value = result[KEYS.STAR_USERNAME];
+      }
+    } else {
+      el.starCard.classList.remove('hidden');
+      el.starVerifiedBadge.classList.add('hidden');
+      if (result[KEYS.STAR_USERNAME]) {
+        el.githubUsername.value = result[KEYS.STAR_USERNAME];
+      }
+    }
+  }
+
+  /**
+   * Verify GitHub star
+   */
+  async function verifyGitHubStar() {
+    const username = el.githubUsername.value.trim();
+
+    if (!username) {
+      showStarStatus('Please enter your GitHub username', 'error');
+      return;
+    }
+
+    showStarStatus('Verifying...', 'loading');
+
+    try {
+      // GitHub API: Get stargazers (case-insensitive comparison)
+      const response = await fetch(
+        `https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/stargazers?per_page=100`,
+        {
+          headers: { Accept: 'application/vnd.github.v3+json' },
+          signal: AbortSignal.timeout(10000),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch stargazers');
+      }
+
+      const stargazers = await response.json();
+
+      // Case-insensitive search
+      const found = stargazers.some(
+        (user) => user.login.toLowerCase() === username.toLowerCase()
+      );
+
+      if (found) {
+        // Save verification
+        await chrome.storage.local.set({
+          [KEYS.STAR_VERIFIED]: true,
+          [KEYS.STAR_USERNAME]: username,
+        });
+
+        showStarStatus('Star verified! Thank you!', 'success');
+
+        // Update UI after short delay
+        setTimeout(() => {
+          el.starCard.classList.add('hidden');
+          el.starVerifiedBadge.classList.remove('hidden');
+        }, 1500);
+      } else {
+        // Check if they might have starred recently (paginated results)
+        // Try fetching more pages
+        let page = 2;
+        let verified = false;
+
+        while (page <= 10 && !verified) {
+          const nextResponse = await fetch(
+            `https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/stargazers?per_page=100&page=${page}`,
+            {
+              headers: { Accept: 'application/vnd.github.v3+json' },
+              signal: AbortSignal.timeout(10000),
+            }
+          );
+
+          if (!nextResponse.ok) break;
+
+          const nextStargazers = await nextResponse.json();
+          if (nextStargazers.length === 0) break;
+
+          const foundInPage = nextStargazers.some(
+            (user) => user.login.toLowerCase() === username.toLowerCase()
+          );
+
+          if (foundInPage) {
+            verified = true;
+            await chrome.storage.local.set({
+              [KEYS.STAR_VERIFIED]: true,
+              [KEYS.STAR_USERNAME]: username,
+            });
+
+            showStarStatus('Star verified! Thank you!', 'success');
+            setTimeout(() => {
+              el.starCard.classList.add('hidden');
+              el.starVerifiedBadge.classList.remove('hidden');
+            }, 1500);
+          }
+
+          page++;
+        }
+
+        if (!verified) {
+          // Save username for convenience
+          await chrome.storage.local.set({ [KEYS.STAR_USERNAME]: username });
+          showStarStatus('Star not found. Please star the repo first!', 'error');
+        }
+      }
+    } catch (error) {
+      showStarStatus('Error verifying. Try again later.', 'error');
+      console.error('Star verification error:', error);
+    }
+  }
+
+  /**
+   * Show star status message
+   */
+  function showStarStatus(message, type) {
+    el.starStatus.textContent = message;
+    el.starStatus.className = `star-status ${type}`;
+    el.starStatus.classList.remove('hidden');
+  }
+
+  /**
    * Load settings
    */
   async function loadSettings() {
     const result = await chrome.storage.local.get(KEYS.SETTINGS);
     const settings = result[KEYS.SETTINGS] || {};
 
-    // Main toggles
     el.toggleDarkMode.checked = settings.darkMode !== false;
     el.toggleKeyboard.checked = settings.keyboardShortcuts !== false;
-
-    // Settings toggles
     el.settingDueDates.checked = settings.dueDateTracker !== false;
     el.settingNotifications.checked = settings.notifications !== false;
     el.settingProgressBar.checked = settings.progressBar !== false;
@@ -345,6 +576,33 @@
    * Setup event listeners
    */
   function setupEventListeners() {
+    // Terms acceptance
+    el.termsNameInput.addEventListener('input', () => {
+      el.acceptTermsBtn.disabled = el.termsNameInput.value.trim().length === 0;
+    });
+
+    el.acceptTermsBtn.addEventListener('click', async () => {
+      const name = el.termsNameInput.value.trim();
+      if (name) {
+        await chrome.storage.local.set({
+          [KEYS.TERMS_ACCEPTED]: true,
+          [KEYS.USER_NAME]: name,
+        });
+        el.termsOverlay.classList.add('hidden');
+        await loadUserProfile();
+        showToast('Welcome to McGraw Plus!');
+      }
+    });
+
+    // Power toggle
+    el.powerToggle.addEventListener('click', togglePower);
+
+    // Star verification
+    el.verifyStarBtn.addEventListener('click', verifyGitHubStar);
+    el.githubUsername.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') verifyGitHubStar();
+    });
+
     // Header buttons
     el.helpBtn.addEventListener('click', () => switchView('help'));
     el.shareBtn.addEventListener('click', () => switchView('share'));
@@ -366,7 +624,7 @@
       });
     });
 
-    // Main toggles
+    // Main toggles (now in settings)
     el.toggleDarkMode.addEventListener('change', () => {
       saveSettings({ darkMode: el.toggleDarkMode.checked });
     });
@@ -394,6 +652,16 @@
 
     el.settingAntiCopy.addEventListener('change', () => {
       saveSettings({ antiCopy: el.settingAntiCopy.checked });
+    });
+
+    // Profile
+    el.saveProfileBtn.addEventListener('click', async () => {
+      const name = el.profileName.value.trim();
+      if (name) {
+        await chrome.storage.local.set({ [KEYS.USER_NAME]: name });
+        await loadUserProfile();
+        showToast('Name saved!');
+      }
     });
 
     // Webhook
@@ -520,6 +788,39 @@
       }
     });
 
+    // Reset options
+    el.redoOnboardingBtn.addEventListener('click', async () => {
+      if (confirm('Redo onboarding? This will show the setup screens again.')) {
+        await chrome.storage.local.remove([KEYS.ONBOARDING_COMPLETE, KEYS.TERMS_ACCEPTED]);
+        chrome.tabs.create({
+          url: chrome.runtime.getURL('onboarding/onboarding.html'),
+        });
+        window.close();
+      }
+    });
+
+    el.resyncDataBtn.addEventListener('click', async () => {
+      showToast('Re-syncing data...');
+      // Trigger a re-scrape on the active tab
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tabs[0] && tabs[0].url?.includes('mheducation.com')) {
+        chrome.tabs.sendMessage(tabs[0].id, { type: 'RESYNC_DATA' }).catch(() => {});
+        showToast('Re-sync requested');
+      } else {
+        showToast('Navigate to SmartBook first');
+      }
+    });
+
+    el.resetAllBtn.addEventListener('click', async () => {
+      if (confirm('Reset everything? This will clear ALL extension data including settings, stats, and Q&A pairs. This cannot be undone!')) {
+        if (confirm('Are you absolutely sure?')) {
+          await chrome.storage.local.clear();
+          showToast('All data reset');
+          setTimeout(() => window.close(), 1000);
+        }
+      }
+    });
+
     // Share
     el.copyLinkBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(CONFIG.REPO_URL);
@@ -538,6 +839,7 @@
     chrome.storage.onChanged.addListener((changes) => {
       if (changes[KEYS.STATS]) loadStats();
       if (changes.responseMap) loadStorageInfo();
+      if (changes[KEYS.USER_NAME]) loadUserProfile();
     });
   }
 

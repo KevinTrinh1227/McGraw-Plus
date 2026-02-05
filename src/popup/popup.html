@@ -18,6 +18,24 @@
         </div>
       </div>
 
+      <!-- Terms Overlay -->
+      <div id="terms-overlay" class="hidden">
+        <div class="block-content">
+          <div class="block-icon">📋</div>
+          <h2>Terms of Use</h2>
+          <p class="terms-text">By using McGraw Plus, you acknowledge:</p>
+          <ul class="terms-list">
+            <li>This tool is for educational purposes only</li>
+            <li>You are responsible for your own academic integrity</li>
+            <li>Use at your own risk</li>
+          </ul>
+          <div class="terms-name">
+            <input type="text" id="terms-name-input" class="input" placeholder="Enter your name..." />
+          </div>
+          <button id="accept-terms-btn" class="btn primary full" disabled>I Understand & Accept</button>
+        </div>
+      </div>
+
       <!-- Header -->
       <header>
         <div class="header-left">
@@ -50,10 +68,27 @@
         </div>
       </header>
 
-      <!-- Views Container (fixed height, no scroll) -->
+      <!-- Views Container -->
       <div class="views-container">
         <!-- Main View -->
         <div id="main-view" class="view active">
+          <!-- User Greeting -->
+          <div id="user-greeting" class="user-greeting hidden"></div>
+
+          <!-- Main Power Toggle -->
+          <div class="power-toggle-card">
+            <div class="power-toggle-info">
+              <span class="power-label">Extension</span>
+              <span class="power-status" id="power-status">Off</span>
+            </div>
+            <button id="power-toggle" class="power-btn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                <line x1="12" y1="2" x2="12" y2="12"/>
+              </svg>
+            </button>
+          </div>
+
           <!-- Status -->
           <div class="status-card">
             <div class="status-row">
@@ -76,20 +111,6 @@
               <span class="stat-value" id="stat-streak">0</span>
               <span class="stat-label">Streak</span>
             </div>
-          </div>
-
-          <!-- Quick Toggles -->
-          <div class="toggles-section">
-            <label class="toggle-row">
-              <span>Dark Mode</span>
-              <input type="checkbox" id="toggle-dark-mode" />
-              <span class="toggle-switch"></span>
-            </label>
-            <label class="toggle-row">
-              <span>Keyboard Shortcuts</span>
-              <input type="checkbox" id="toggle-keyboard" />
-              <span class="toggle-switch"></span>
-            </label>
           </div>
 
           <!-- Dashboard Button -->
@@ -122,6 +143,16 @@
           </div>
 
           <div class="tab-content active" id="tab-general">
+            <label class="toggle-row">
+              <span>Dark Mode</span>
+              <input type="checkbox" id="toggle-dark-mode" />
+              <span class="toggle-switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Keyboard Shortcuts</span>
+              <input type="checkbox" id="toggle-keyboard" />
+              <span class="toggle-switch"></span>
+            </label>
             <label class="toggle-row">
               <span>Due Date Tracker</span>
               <input type="checkbox" id="setting-due-dates" />
@@ -176,6 +207,11 @@
                 <button id="test-llm-btn" class="btn small outline">Test</button>
               </div>
             </div>
+            <div class="section">
+              <h4>Your Profile</h4>
+              <input type="text" id="profile-name" class="input" placeholder="Your name..." />
+              <button id="save-profile-btn" class="btn small full">Save Name</button>
+            </div>
           </div>
 
           <div class="tab-content" id="tab-data">
@@ -193,6 +229,14 @@
               <button id="export-data-btn" class="btn small">Export</button>
               <button id="clear-data-btn" class="btn small danger">Clear</button>
             </div>
+
+            <div class="section reset-section">
+              <h4>Reset Options</h4>
+              <button id="redo-onboarding-btn" class="btn small outline full">Redo Onboarding</button>
+              <button id="resync-data-btn" class="btn small outline full">Re-sync Data</button>
+              <button id="reset-all-btn" class="btn small danger full">Reset Everything</button>
+            </div>
+
             <div class="about">
               <span>v<span id="version">2.0.0</span></span>
               <a href="https://github.com/KevinTrinh1227/McGraw-Plus" target="_blank">GitHub</a>
@@ -218,6 +262,7 @@
               <div class="shortcut"><kbd>1-4</kbd> or <kbd>A-D</kbd> Select answer</div>
               <div class="shortcut"><kbd>Enter</kbd> Submit</div>
               <div class="shortcut"><kbd>Ctrl+Shift+D</kbd> Dark mode</div>
+              <div class="shortcut"><kbd>Ctrl+Shift+M</kbd> Dashboard</div>
             </div>
             <div class="help-section">
               <h4>Not Working?</h4>
@@ -235,7 +280,7 @@
                 <path d="M19 12H5M12 19l-7-7 7-7"/>
               </svg>
             </button>
-            <span class="view-title">Share</span>
+            <span class="view-title">Share & Support</span>
           </div>
 
           <div class="share-content">
@@ -247,8 +292,27 @@
               </svg>
               Copy Link
             </button>
+
+            <!-- Star Verification Section -->
             <div class="star-section">
-              <p>If this helps, please star the repo!</p>
+              <h4>Support the Project</h4>
+              <p>Star our GitHub repo to unlock premium features!</p>
+
+              <!-- Star Verification Card -->
+              <div id="star-card" class="star-card">
+                <div class="star-input-row">
+                  <input type="text" id="github-username" class="input" placeholder="GitHub username..." />
+                  <button id="verify-star-btn" class="btn small primary">Verify</button>
+                </div>
+                <div id="star-status" class="star-status hidden"></div>
+              </div>
+
+              <!-- Verified Star Badge -->
+              <div id="star-verified-badge" class="star-verified-badge hidden">
+                <span class="verified-icon">✓</span>
+                <span>Star Verified — Thank you!</span>
+              </div>
+
               <a href="https://github.com/KevinTrinh1227/McGraw-Plus" target="_blank" class="btn primary full">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/>
@@ -259,6 +323,13 @@
           </div>
         </div>
       </div>
+
+      <!-- Footer -->
+      <footer class="popup-footer">
+        <span>v<span id="footer-version">2.0.0</span></span>
+        <span class="footer-divider">•</span>
+        <a href="https://github.com/KevinTrinh1227/McGraw-Plus" target="_blank">GitHub</a>
+      </footer>
     </div>
     <script src="popup.js"></script>
   </body>

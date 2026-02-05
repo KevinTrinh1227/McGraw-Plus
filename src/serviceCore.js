@@ -66,7 +66,19 @@ async function checkForUpdate() {
     const release = await response.json();
     const latestVersion = release.tag_name; // e.g. "v3.1.0" or "3.1.0"
     const currentVersion = chrome.runtime.getManifest().version;
-    const downloadUrl = release.html_url;
+
+    // Find the ZIP asset URL for direct download (increments download count)
+    let downloadUrl = release.html_url; // fallback to release page
+    if (release.assets && release.assets.length > 0) {
+      // Look for a .zip file in the assets
+      const zipAsset = release.assets.find(
+        (asset) => asset.name.endsWith(".zip") && asset.browser_download_url
+      );
+      if (zipAsset) {
+        downloadUrl = zipAsset.browser_download_url;
+        console.log("[Update] Found ZIP asset:", zipAsset.name);
+      }
+    }
 
     if (compareSemver(latestVersion, currentVersion) > 0) {
       console.log(

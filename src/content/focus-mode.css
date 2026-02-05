@@ -1,0 +1,129 @@
+/**
+ * McGraw Plus - Focus Mode Styles
+ * Hides distractions and expands main content area
+ */
+
+/* Hide sidebar elements */
+.mp-focus-mode .sidebar,
+.mp-focus-mode .side-panel,
+.mp-focus-mode .left-panel,
+.mp-focus-mode .right-panel,
+.mp-focus-mode [class*="sidebar"],
+.mp-focus-mode [class*="side-nav"],
+.mp-focus-mode .navigation-panel,
+.mp-focus-mode .table-of-contents,
+.mp-focus-mode .toc-panel {
+  display: none !important;
+}
+
+/* Hide headers and navigation (optional - keep minimal) */
+.mp-focus-mode .top-bar,
+.mp-focus-mode .breadcrumb,
+.mp-focus-mode [class*="breadcrumb"],
+.mp-focus-mode .secondary-nav,
+.mp-focus-mode .page-header:not(.minimal) {
+  display: none !important;
+}
+
+/* Hide footer */
+.mp-focus-mode footer,
+.mp-focus-mode .footer,
+.mp-focus-mode [class*="footer"] {
+  display: none !important;
+}
+
+/* Hide banners and ads */
+.mp-focus-mode .banner,
+.mp-focus-mode .promo,
+.mp-focus-mode .advertisement,
+.mp-focus-mode [class*="banner"],
+.mp-focus-mode [class*="promo"],
+.mp-focus-mode [class*="ad-"] {
+  display: none !important;
+}
+
+/* Hide non-essential UI elements */
+.mp-focus-mode .help-button,
+.mp-focus-mode .chat-widget,
+.mp-focus-mode .feedback-button,
+.mp-focus-mode [class*="help-widget"],
+.mp-focus-mode [class*="chat-button"] {
+  display: none !important;
+}
+
+/* Expand main content */
+.mp-focus-mode .main-content,
+.mp-focus-mode .content-wrapper,
+.mp-focus-mode .learning-content,
+.mp-focus-mode .question-container,
+.mp-focus-mode .assignment-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  padding: 20px !important;
+}
+
+/* Center and constrain reading width for readability */
+.mp-focus-mode .reading-content,
+.mp-focus-mode .text-content {
+  max-width: 800px !important;
+  margin: 0 auto !important;
+}
+
+/* Question area optimization */
+.mp-focus-mode .prompt,
+.mp-focus-mode .question-text {
+  font-size: 1.1em !important;
+  line-height: 1.6 !important;
+  padding: 20px !important;
+}
+
+/* Answer choices spacing */
+.mp-focus-mode .choice,
+.mp-focus-mode .answer-choice,
+.mp-focus-mode .choice-item {
+  padding: 15px 20px !important;
+  margin: 10px 0 !important;
+}
+
+/* Ensure essential controls remain visible */
+.mp-focus-mode .submit-button,
+.mp-focus-mode .next-button,
+.mp-focus-mode .confidence-buttons-container,
+.mp-focus-mode .next-button-container,
+.mp-focus-mode [class*="submit"],
+.mp-focus-mode [class*="navigation-button"] {
+  display: flex !important;
+  visibility: visible !important;
+}
+
+/* Keep progress indicator visible but minimal */
+.mp-focus-mode .progress-indicator,
+.mp-focus-mode [class*="progress"] {
+  position: fixed !important;
+  top: 10px !important;
+  right: 10px !important;
+  z-index: 1000 !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  color: white !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+}
+
+/* Smooth transition */
+.mp-focus-mode * {
+  transition: all 0.3s ease !important;
+}
+
+/* Focus mode indicator */
+.mp-focus-mode::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  z-index: 10000;
+}

@@ -1,0 +1,304 @@
+/**
+ * McGraw Plus - Dark Mode Styles
+ * Comprehensive dark theme for McGraw-Hill learning pages
+ */
+
+/* Dark mode variables */
+.mp-dark-mode {
+  --mp-bg: #0f0f0f;
+  --mp-bg-secondary: #1a1a1a;
+  --mp-bg-tertiary: #222222;
+  --mp-bg-hover: #2a2a2a;
+  --mp-text: #e5e5e5;
+  --mp-text-secondary: #a0a0a0;
+  --mp-text-muted: #666666;
+  --mp-border: #333333;
+  --mp-accent: #6366f1;
+  --mp-success: #22c55e;
+  --mp-warning: #f59e0b;
+  --mp-error: #ef4444;
+}
+
+/* Base elements */
+.mp-dark-mode body,
+.mp-dark-mode html {
+  background-color: var(--mp-bg) !important;
+  color: var(--mp-text) !important;
+}
+
+/* Main containers */
+.mp-dark-mode .page-container,
+.mp-dark-mode .main-content,
+.mp-dark-mode .content-wrapper,
+.mp-dark-mode .learning-content,
+.mp-dark-mode .assignment-container,
+.mp-dark-mode .question-container,
+.mp-dark-mode .readspeaker-player-wrapper,
+.mp-dark-mode .activity-container,
+.mp-dark-mode [class*="container"]:not(.mp-dark-mode-exclude) {
+  background-color: var(--mp-bg-secondary) !important;
+  color: var(--mp-text) !important;
+}
+
+/* Headers and navigation */
+.mp-dark-mode header,
+.mp-dark-mode .header,
+.mp-dark-mode nav,
+.mp-dark-mode .navbar,
+.mp-dark-mode .top-bar,
+.mp-dark-mode .breadcrumb-bar,
+.mp-dark-mode [class*="header"] {
+  background-color: var(--mp-bg) !important;
+  color: var(--mp-text) !important;
+  border-color: var(--mp-border) !important;
+}
+
+/* Sidebars */
+.mp-dark-mode .sidebar,
+.mp-dark-mode .side-panel,
+.mp-dark-mode .left-panel,
+.mp-dark-mode .right-panel,
+.mp-dark-mode [class*="sidebar"] {
+  background-color: var(--mp-bg-secondary) !important;
+  border-color: var(--mp-border) !important;
+}
+
+/* Cards and panels */
+.mp-dark-mode .card,
+.mp-dark-mode .panel,
+.mp-dark-mode .box,
+.mp-dark-mode .tile,
+.mp-dark-mode .widget,
+.mp-dark-mode [class*="card"],
+.mp-dark-mode [class*="panel"] {
+  background-color: var(--mp-bg-tertiary) !important;
+  border-color: var(--mp-border) !important;
+  color: var(--mp-text) !important;
+}
+
+/* Question elements */
+.mp-dark-mode .prompt,
+.mp-dark-mode .question-text,
+.mp-dark-mode .question-prompt,
+.mp-dark-mode .question-stem,
+.mp-dark-mode [class*="question"] {
+  background-color: var(--mp-bg-secondary) !important;
+  color: var(--mp-text) !important;
+}
+
+/* Answer choices */
+.mp-dark-mode .choice,
+.mp-dark-mode .answer-choice,
+.mp-dark-mode .choiceText,
+.mp-dark-mode .choice-item,
+.mp-dark-mode .response-option,
+.mp-dark-mode [class*="choice"]:not(button) {
+  background-color: var(--mp-bg-tertiary) !important;
+  color: var(--mp-text) !important;
+  border-color: var(--mp-border) !important;
+}
+
+.mp-dark-mode .choice:hover,
+.mp-dark-mode .answer-choice:hover,
+.mp-dark-mode .choice-item:hover,
+.mp-dark-mode [class*="choice"]:hover:not(button) {
+  background-color: var(--mp-bg-hover) !important;
+}
+
+/* Selected state */
+.mp-dark-mode .choice.selected,
+.mp-dark-mode .choice-item.selected,
+.mp-dark-mode [class*="selected"] {
+  background-color: rgba(99, 102, 241, 0.2) !important;
+  border-color: var(--mp-accent) !important;
+}
+
+/* Correct/incorrect feedback */
+.mp-dark-mode .correct,
+.mp-dark-mode [class*="correct"] {
+  background-color: rgba(34, 197, 94, 0.15) !important;
+  border-color: var(--mp-success) !important;
+}
+
+.mp-dark-mode .incorrect,
+.mp-dark-mode .wrong,
+.mp-dark-mode [class*="incorrect"],
+.mp-dark-mode [class*="wrong"] {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  border-color: var(--mp-error) !important;
+}
+
+/* Buttons */
+.mp-dark-mode button:not(.mp-dark-mode-exclude),
+.mp-dark-mode .btn:not(.mp-dark-mode-exclude),
+.mp-dark-mode [class*="button"]:not(.mp-dark-mode-exclude) {
+  color: var(--mp-text) !important;
+}
+
+.mp-dark-mode button.primary,
+.mp-dark-mode .btn-primary,
+.mp-dark-mode [class*="primary-button"] {
+  background-color: var(--mp-accent) !important;
+  color: white !important;
+}
+
+/* Inputs */
+.mp-dark-mode input,
+.mp-dark-mode textarea,
+.mp-dark-mode select {
+  background-color: var(--mp-bg-tertiary) !important;
+  color: var(--mp-text) !important;
+  border-color: var(--mp-border) !important;
+}
+
+.mp-dark-mode input:focus,
+.mp-dark-mode textarea:focus,
+.mp-dark-mode select:focus {
+  border-color: var(--mp-accent) !important;
+  outline-color: var(--mp-accent) !important;
+}
+
+.mp-dark-mode input::placeholder,
+.mp-dark-mode textarea::placeholder {
+  color: var(--mp-text-muted) !important;
+}
+
+/* Text colors */
+.mp-dark-mode p,
+.mp-dark-mode span,
+.mp-dark-mode div,
+.mp-dark-mode label,
+.mp-dark-mode h1, .mp-dark-mode h2, .mp-dark-mode h3,
+.mp-dark-mode h4, .mp-dark-mode h5, .mp-dark-mode h6 {
+  color: var(--mp-text) !important;
+}
+
+.mp-dark-mode a {
+  color: #60a5fa !important;
+}
+
+.mp-dark-mode a:hover {
+  color: #93c5fd !important;
+}
+
+/* Tables */
+.mp-dark-mode table,
+.mp-dark-mode th,
+.mp-dark-mode td {
+  background-color: var(--mp-bg-secondary) !important;
+  color: var(--mp-text) !important;
+  border-color: var(--mp-border) !important;
+}
+
+.mp-dark-mode tr:nth-child(even) {
+  background-color: var(--mp-bg-tertiary) !important;
+}
+
+/* Tooltips and popovers */
+.mp-dark-mode .tooltip,
+.mp-dark-mode .popover,
+.mp-dark-mode [class*="tooltip"],
+.mp-dark-mode [class*="popover"] {
+  background-color: var(--mp-bg-tertiary) !important;
+  color: var(--mp-text) !important;
+  border-color: var(--mp-border) !important;
+}
+
+/* Modals and dialogs */
+.mp-dark-mode .modal,
+.mp-dark-mode .dialog,
+.mp-dark-mode [class*="modal"],
+.mp-dark-mode [class*="dialog"] {
+  background-color: var(--mp-bg-secondary) !important;
+  color: var(--mp-text) !important;
+}
+
+.mp-dark-mode .modal-backdrop,
+.mp-dark-mode .overlay-backdrop {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Progress bars */
+.mp-dark-mode .progress,
+.mp-dark-mode [class*="progress-bar"] {
+  background-color: var(--mp-bg-tertiary) !important;
+}
+
+.mp-dark-mode .progress-fill,
+.mp-dark-mode [class*="progress-fill"] {
+  background-color: var(--mp-accent) !important;
+}
+
+/* Scrollbars (WebKit) */
+.mp-dark-mode ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.mp-dark-mode ::-webkit-scrollbar-track {
+  background: var(--mp-bg-secondary);
+}
+
+.mp-dark-mode ::-webkit-scrollbar-thumb {
+  background: var(--mp-border);
+  border-radius: 5px;
+}
+
+.mp-dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: var(--mp-text-muted);
+}
+
+/* Reading content */
+.mp-dark-mode .reading-content,
+.mp-dark-mode .text-content,
+.mp-dark-mode .ebook-content,
+.mp-dark-mode [class*="reading"],
+.mp-dark-mode [class*="ebook"] {
+  background-color: var(--mp-bg-secondary) !important;
+  color: var(--mp-text) !important;
+}
+
+/* Feedback messages */
+.mp-dark-mode .feedback,
+.mp-dark-mode .answer-feedback,
+.mp-dark-mode [class*="feedback"] {
+  background-color: var(--mp-bg-tertiary) !important;
+  color: var(--mp-text) !important;
+  border-color: var(--mp-border) !important;
+}
+
+/* Drag and drop */
+.mp-dark-mode .drag-item,
+.mp-dark-mode .drop-zone,
+.mp-dark-mode [class*="drag"],
+.mp-dark-mode [class*="drop"] {
+  background-color: var(--mp-bg-tertiary) !important;
+  border-color: var(--mp-border) !important;
+}
+
+/* Loader/spinner */
+.mp-dark-mode .loader,
+.mp-dark-mode .spinner,
+.mp-dark-mode [class*="loading"] {
+  border-color: var(--mp-border) !important;
+  border-top-color: var(--mp-accent) !important;
+}
+
+/* Icons (invert light icons) */
+.mp-dark-mode img[src*="icon"],
+.mp-dark-mode img[class*="icon"] {
+  filter: invert(0.8) hue-rotate(180deg);
+}
+
+/* Skip certain elements */
+.mp-dark-mode video,
+.mp-dark-mode iframe,
+.mp-dark-mode .mp-dark-mode-exclude,
+.mp-dark-mode [data-no-dark-mode] {
+  /* Don't apply dark mode styles */
+}
+
+/* Transitions */
+.mp-dark-mode * {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}

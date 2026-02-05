@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Welcome to McGraw Plus</title>
+    <link href="onboarding.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Progress indicator -->
+      <div class="progress">
+        <div class="progress-dot active" data-step="1"></div>
+        <div class="progress-dot" data-step="2"></div>
+        <div class="progress-dot" data-step="3"></div>
+        <div class="progress-dot" data-step="4"></div>
+        <div class="progress-dot" data-step="5"></div>
+        <div class="progress-dot" data-step="6"></div>
+      </div>
+
+      <!-- Slides -->
+      <div class="slides-container">
+        <!-- Slide 1: Welcome -->
+        <div class="slide active" id="slide-1">
+          <div class="slide-icon">📚</div>
+          <h1>Welcome to McGraw Plus</h1>
+          <p class="subtitle">A study companion for McGraw-Hill SmartBook</p>
+          <p class="description">
+            McGraw Plus enhances your study experience with helpful features like dark mode,
+            keyboard shortcuts, due date tracking, and more.
+          </p>
+        </div>
+
+        <!-- Slide 2: Login to Connect -->
+        <div class="slide" id="slide-2">
+          <div class="slide-icon">🔐</div>
+          <h2>First, Log In to Connect</h2>
+          <p class="description">
+            To get started, you need to be logged in to McGraw-Hill Connect.
+            This allows us to automatically sync your courses and assignments.
+          </p>
+
+          <div class="login-section">
+            <div id="login-status" class="status-card">
+              <div class="status-indicator checking">
+                <div class="spinner"></div>
+                <span>Checking login status...</span>
+              </div>
+            </div>
+
+            <a href="https://connect.mheducation.com/" target="_blank" class="btn primary" id="login-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              Open Connect
+            </a>
+
+            <button id="check-login-btn" class="btn secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+              Check Again
+            </button>
+          </div>
+        </div>
+
+        <!-- Slide 3: Features -->
+        <div class="slide" id="slide-3">
+          <h2>Study Smarter</h2>
+          <div class="features-grid">
+            <div class="feature-card">
+              <span class="feature-icon">🌙</span>
+              <span class="feature-name">Dark Mode</span>
+              <span class="feature-desc">Easy on your eyes for late-night studying</span>
+            </div>
+            <div class="feature-card">
+              <span class="feature-icon">⌨️</span>
+              <span class="feature-name">Keyboard Shortcuts</span>
+              <span class="feature-desc">Navigate faster with 1-4 or A-D keys</span>
+            </div>
+            <div class="feature-card">
+              <span class="feature-icon">📅</span>
+              <span class="feature-name">Due Date Tracker</span>
+              <span class="feature-desc">Never miss an assignment deadline</span>
+            </div>
+            <div class="feature-card">
+              <span class="feature-icon">📊</span>
+              <span class="feature-name">Progress Stats</span>
+              <span class="feature-desc">Track your study progress over time</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 4: Preferences -->
+        <div class="slide" id="slide-4">
+          <h2>Customize Your Experience</h2>
+          <p class="description">Choose which features to enable by default. You can change these later in settings.</p>
+          <div class="preferences-list">
+            <label class="pref-item">
+              <input type="checkbox" id="pref-dark-mode" checked />
+              <span class="pref-checkbox"></span>
+              <div class="pref-info">
+                <span class="pref-name">🌙 Dark Mode</span>
+                <span class="pref-desc">Apply dark theme to SmartBook pages</span>
+              </div>
+            </label>
+            <label class="pref-item">
+              <input type="checkbox" id="pref-keyboard" checked />
+              <span class="pref-checkbox"></span>
+              <div class="pref-info">
+                <span class="pref-name">⌨️ Keyboard Shortcuts</span>
+                <span class="pref-desc">Use 1-4 or A-D to select answers</span>
+              </div>
+            </label>
+            <label class="pref-item">
+              <input type="checkbox" id="pref-due-dates" checked />
+              <span class="pref-checkbox"></span>
+              <div class="pref-info">
+                <span class="pref-name">📅 Due Date Tracking</span>
+                <span class="pref-desc">Track and get reminders for assignments</span>
+              </div>
+            </label>
+            <label class="pref-item">
+              <input type="checkbox" id="pref-notifications" checked />
+              <span class="pref-checkbox"></span>
+              <div class="pref-info">
+                <span class="pref-name">🔔 Notifications</span>
+                <span class="pref-desc">Get reminders for upcoming deadlines</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Slide 5: Pin Extension -->
+        <div class="slide" id="slide-5">
+          <div class="slide-icon">📌</div>
+          <h2>Pin for Quick Access</h2>
+          <p class="description">
+            Pin McGraw Plus to your toolbar for easy access to features while studying.
+          </p>
+
+          <div class="pin-instructions">
+            <div class="pin-step">
+              <span class="pin-step-number">1</span>
+              <div class="pin-step-content">
+                <span class="pin-step-title">Click the puzzle icon</span>
+                <span class="pin-step-desc">Find the extensions icon (puzzle piece) in your browser toolbar</span>
+              </div>
+            </div>
+            <div class="pin-step">
+              <span class="pin-step-number">2</span>
+              <div class="pin-step-content">
+                <span class="pin-step-title">Find McGraw Plus</span>
+                <span class="pin-step-desc">Look for McGraw Plus in the dropdown list</span>
+              </div>
+            </div>
+            <div class="pin-step">
+              <span class="pin-step-number">3</span>
+              <div class="pin-step-content">
+                <span class="pin-step-title">Click the pin icon</span>
+                <span class="pin-step-desc">Click the pin to keep it visible in your toolbar</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="pin-note">You can skip this step and pin later if you prefer.</p>
+        </div>
+
+        <!-- Slide 6: Ready -->
+        <div class="slide" id="slide-6">
+          <div class="slide-icon">🚀</div>
+          <h2>You're All Set!</h2>
+
+          <div id="sync-status" class="sync-card">
+            <div class="sync-row">
+              <span class="sync-label">Courses Found</span>
+              <span class="sync-value" id="courses-count">0</span>
+            </div>
+            <div class="sync-row">
+              <span class="sync-label">Assignments</span>
+              <span class="sync-value" id="assignments-count">0</span>
+            </div>
+            <div class="sync-row">
+              <span class="sync-label">Upcoming Due</span>
+              <span class="sync-value" id="upcoming-count">0</span>
+            </div>
+          </div>
+
+          <p class="description">
+            McGraw Plus is ready to use. Click the extension icon while on a SmartBook page
+            to access all features.
+          </p>
+          <div class="ready-tips">
+            <div class="tip">
+              <span class="tip-icon">💡</span>
+              <span>Use <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> to toggle dark mode</span>
+            </div>
+            <div class="tip">
+              <span class="tip-icon">💡</span>
+              <span>Press <kbd>1</kbd>-<kbd>4</kbd> to quickly select answers</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="nav-buttons">
+        <button id="skip-btn" class="btn secondary">Skip</button>
+        <div class="nav-right">
+          <button id="back-btn" class="btn secondary hidden">Back</button>
+          <button id="next-btn" class="btn primary">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="onboarding.js"></script>
+  </body>
+</html>

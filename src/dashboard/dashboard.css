@@ -1247,6 +1247,118 @@ body {
   opacity: 1;
 }
 
+/* Dashboard Footer */
+.dashboard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--bg);
+  margin-top: auto;
+}
+
+.footer-divider {
+  opacity: 0.5;
+}
+
+.dashboard-footer a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.dashboard-footer a:hover {
+  color: var(--accent);
+}
+
+/* Dev Badge */
+.dev-badge {
+  background: var(--warning);
+  color: #000;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+/* Dev Section */
+.dev-section {
+  max-width: 1200px;
+}
+
+.dev-section h2 {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.dev-desc {
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.dev-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.dev-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.dev-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+}
+
+.dev-card .btn {
+  margin-bottom: 8px;
+}
+
+.dev-card .btn:last-child {
+  margin-bottom: 0;
+}
+
+.code-block {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 11px;
+  overflow-x: auto;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Dev-only visibility */
+.dev-only {
+  display: none !important;
+}
+
+body.dev-mode .dev-only {
+  display: flex !important;
+}
+
+body.dev-mode .dev-only.tab-panel {
+  display: none !important;
+}
+
+body.dev-mode .dev-only.tab-panel.active {
+  display: block !important;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
   .quick-stats {
