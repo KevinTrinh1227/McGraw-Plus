@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/KevinTrinh1227/McGrawHill-SmartBook-Solver/refs/heads/main/src/assets/logo.png" alt="McGraw-Hill SmartBook Solver Logo" width="120" height="120">
+  <img src="https://github.com/user-attachments/assets/cad97b8d-db4c-4c6a-9287-52803e55d481" alt="McGraw-Hill SmartBook Solver Logo">
 </p>
-
-<h1 align="center">McGraw-Hill SmartBook Solver</h1>
 
 <p align="center">
   <em>
