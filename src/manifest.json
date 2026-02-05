@@ -20,9 +20,12 @@
   "manifest_version": 3,
   "name": "McGraw-Hill SmartBook Solver",
   "description": "Automatically interacts with McGraw-Hill SmartBook concept questions (educational use only).",
-  "permissions": ["activeTab", "storage", "scripting"],
-  "host_permissions": ["*://learning.mheducation.com/*"],
-  "version": "3.0.0",
+  "permissions": ["activeTab", "storage", "scripting", "alarms"],
+  "host_permissions": [
+    "*://learning.mheducation.com/*",
+    "https://api.github.com/*"
+  ],
+  "version": "3.1.0",
   "web_accessible_resources": [
     {
       "resources": ["contentSolver.js"],

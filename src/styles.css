@@ -156,14 +156,6 @@ h1 {
   text-decoration: underline;
 }
 
-/* Emojis/Status Colors within the status message */
-#status-message .🟢 {
-  color: var(--active-color);
-}
-#status-message .🔴 {
-  color: var(--inactive-color);
-}
-
 /* Bolding within status message */
 #status-message strong {
   font-weight: 700;
@@ -267,8 +259,59 @@ h1 {
 
 .toggle-hint-text {
   font-size: 0.75rem;
-  color: var(--text-muted); /* Assuming you use the muted text color */
+  color: var(--text-muted);
   text-align: center;
   margin-top: 5px;
   margin-bottom: 0;
+}
+
+/* ---------- UPDATE BANNER STYLES ---------- */
+#update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #1b2e1b;
+  border: 1px solid #4caf50;
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  font-size: 0.82em;
+  color: #c8e6c9;
+}
+
+#update-banner #update-text {
+  flex: 1;
+  font-weight: 600;
+}
+
+.update-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.update-actions a {
+  color: #81c784;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.update-actions a:hover {
+  text-decoration: underline;
+  color: #a5d6a7;
+}
+
+.update-actions button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85em;
+  padding: 2px 4px;
+}
+
+.update-actions button:hover {
+  color: var(--text);
 }
