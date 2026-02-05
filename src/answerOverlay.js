@@ -99,7 +99,11 @@ function highlighter() {
             for (let x = 0; x < answerElements.length; x++) {
                 const el = answerElements[x].getElementsByClassName("correct-answer")[0];
                 if (el) {
-                    answers.push(el.textContent.replace(/,/g, '').trim());
+                    // Preserve full answer text, just trim whitespace
+                    const text = el.textContent.trim();
+                    if (text) {
+                        answers.push(text);
+                    }
                 }
             }
             storeAnswers(question, answers);

@@ -49,13 +49,21 @@ function sleep(ms) {
 
 function setInputValue(inputEl, value) {
   inputEl.focus();
+
+  // Clear existing value first
+  inputEl.select();
+
+  // Try execCommand first
+  let success = false;
   if (document.execCommand) {
-    document.execCommand("insertText", false, value);
+    success = document.execCommand("insertText", false, value);
   }
-  // Fallback: if execCommand didn't set the value
-  if (inputEl.value !== value) {
+
+  // Fallback: if execCommand failed or value doesn't match
+  if (!success || inputEl.value !== value) {
     const nativeSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype, "value"
+      window.HTMLInputElement.prototype,
+      "value",
     ).set;
     nativeSetter.call(inputEl, value);
     inputEl.dispatchEvent(new Event("input", { bubbles: true }));
@@ -77,7 +85,9 @@ function pruneResponseMapIfNeeded() {
         if (sizeBytes > MAX_SIZE) {
           const keys = Object.keys(map);
           const pruneCount = Math.ceil(keys.length * 0.2);
-          console.log(`S: Pruning ${pruneCount} entries from responseMap (${(sizeBytes / 1024 / 1024).toFixed(1)}MB)`);
+          console.log(
+            `S: Pruning ${pruneCount} entries from responseMap (${(sizeBytes / 1024 / 1024).toFixed(1)}MB)`,
+          );
           for (let i = 0; i < pruneCount; i++) {
             delete map[keys[i]];
           }
@@ -156,7 +166,7 @@ function readQuestionAndResponses() {
     const paragraphElement = questionElement[0].querySelector("p");
     if (paragraphElement) {
       const textNodes = [...paragraphElement.childNodes].filter(
-        (node) => node.nodeType === Node.TEXT_NODE
+        (node) => node.nodeType === Node.TEXT_NODE,
       );
       question = textNodes.map((node) => node.textContent).join("_____");
     }
@@ -166,7 +176,7 @@ function readQuestionAndResponses() {
   const container = document.getElementsByClassName("air-item-container")[0];
   if (container) {
     responseElements = container.getElementsByClassName(
-      "choiceText rs_preserve"
+      "choiceText rs_preserve",
     );
   }
 
@@ -182,12 +192,12 @@ function readQuestionAndResponses() {
 async function selectCorrectResponse(question, responses, responseElements) {
   await sleep(100);
   let nextButtonContainer = document.getElementsByClassName(
-    "next-button-container"
+    "next-button-container",
   )[0];
   if (nextButtonContainer) {
     let nextButton = nextButtonContainer.getElementsByTagName("button")[0];
     let reviewConceptButton = document.getElementsByClassName(
-      "btn btn-tertiary lr-tray-button"
+      "btn btn-tertiary lr-tray-button",
     )[0];
 
     if (nextButton && nextButton.hasAttribute("disabled")) {
@@ -195,7 +205,7 @@ async function selectCorrectResponse(question, responses, responseElements) {
         reviewConceptButton.click();
         await sleep(4000);
         let continueButton = document.querySelector(
-          ".button-bar-wrapper button"
+          ".button-bar-wrapper button",
         );
         if (continueButton) {
           continueButton.click();
@@ -211,7 +221,7 @@ async function selectCorrectResponse(question, responses, responseElements) {
   }
 
   let answerButton = document.querySelector(
-    ".confidence-buttons-container button"
+    ".confidence-buttons-container button",
   );
   if (!answerButton) {
     console.log("No answer button found, likely not on a question page.");
@@ -230,12 +240,16 @@ async function selectCorrectResponse(question, responses, responseElements) {
 
     if (isFillInBlank) {
       let blanks = document.getElementsByClassName(
-        "input-container span-to-div"
+        "input-container span-to-div",
       );
+      console.log("S: Filling", blanks.length, "blanks with stored answers:", correctResponses);
       for (let x = 0; x < blanks.length; x++) {
         if (x < correctResponses.length) {
           let inputTag = blanks[x].getElementsByTagName("input")[0];
-          if (inputTag) setInputValue(inputTag, correctResponses[x]);
+          if (inputTag) {
+            console.log("S: Setting blank", x, "to:", correctResponses[x]);
+            setInputValue(inputTag, correctResponses[x]);
+          }
         }
       }
     } else if (isMultipleChoice) {
@@ -253,7 +267,6 @@ async function selectCorrectResponse(question, responses, responseElements) {
 
     await sleep(Math.random() * 200 + 500);
     answerButton.click();
-
   } else {
     let isFillInBlankQuestion = false;
     let isDragAndDrop = false;
@@ -263,10 +276,10 @@ async function selectCorrectResponse(question, responses, responseElements) {
         isDragAndDrop = true;
         await sleep(500);
         let choices = document.querySelectorAll(
-          ".choices-container .choice-item-wrapper .content p"
+          ".choices-container .choice-item-wrapper .content p",
         );
         let drop = document.querySelectorAll(
-          ".-placeholder.choice-item-wrapper"
+          ".-placeholder.choice-item-wrapper",
         );
         let numDrops = 0;
 
@@ -277,7 +290,7 @@ async function selectCorrectResponse(question, responses, responseElements) {
           }
           await sleep(500);
           choices = document.querySelectorAll(
-            ".choices-container .choice-item-wrapper .content p"
+            ".choices-container .choice-item-wrapper .content p",
           );
           drop = document.querySelectorAll(".-placeholder.choice-item-wrapper");
           await sleep(500);
@@ -292,11 +305,11 @@ async function selectCorrectResponse(question, responses, responseElements) {
       ) {
         isFillInBlankQuestion = true;
         let blanks = document.getElementsByClassName(
-          "input-container span-to-div"
+          "input-container span-to-div",
         );
         for (let x = 0; x < blanks.length; x++) {
           let inputTag = blanks[x].getElementsByTagName("input")[0];
-          if (inputTag) setInputValue(inputTag, "Guess Answer");
+          if (inputTag) setInputValue(inputTag, "ANSWER");
         }
       }
     } else {
@@ -310,16 +323,22 @@ async function selectCorrectResponse(question, responses, responseElements) {
     }
 
     // --- Learn the Correct Answer ---
-    await sleep(Math.random() * 100 + 400);
+    // Wait longer for feedback to render
+    await sleep(800);
     let answers = [];
 
     if (isFillInBlankQuestion) {
       let answerElements = document.getElementsByClassName("correct-answers");
+      console.log("S: Found", answerElements.length, "correct-answers elements");
       for (let x = 0; x < answerElements.length; x++) {
-        const text =
-          answerElements[x].querySelector(".correct-answer")?.textContent;
-        if (text) {
-          answers.push(text.replace(/,/g, "").trim());
+        const correctAnswerEl = answerElements[x].querySelector(".correct-answer");
+        if (correctAnswerEl) {
+          // Get the text content and trim, but preserve the full answer
+          const text = correctAnswerEl.textContent.trim();
+          console.log("S: Fill-in-blank answer", x, ":", text);
+          if (text) {
+            answers.push(text);
+          }
         }
       }
     } else if (isDragAndDrop) {
@@ -330,7 +349,7 @@ async function selectCorrectResponse(question, responses, responseElements) {
         document.getElementsByClassName("answer-container")[0];
       if (answerContainer) {
         let answerElements = answerContainer.getElementsByClassName(
-          "choiceText rs_preserve"
+          "choiceText rs_preserve",
         );
         if (answerElements.length === 0) {
           answerElements = answerContainer.getElementsByClassName("choice-row");
@@ -351,7 +370,7 @@ async function selectCorrectResponse(question, responses, responseElements) {
   await sleep(Math.random() * 200 + 300);
   let nextButton = document.querySelector(".next-button-container button");
   let reviewConceptButton = document.querySelector(
-    ".btn.btn-tertiary.lr-tray-button"
+    ".btn.btn-tertiary.lr-tray-button",
   );
 
   if (nextButton) {
@@ -360,7 +379,7 @@ async function selectCorrectResponse(question, responses, responseElements) {
         reviewConceptButton.click();
         await sleep(500);
         let continueButton = document.querySelector(
-          ".button-bar-wrapper button"
+          ".button-bar-wrapper button",
         );
         if (continueButton) {
           continueButton.click();
@@ -386,7 +405,7 @@ async function answerQuestion() {
     await selectCorrectResponse(question, responses, responseElements);
   } else {
     const toQuestionsButton = document.querySelector(
-      'button[data-automation-id="reading-questions-button"]'
+      'button[data-automation-id="reading-questions-button"]',
     );
     const continueButton = document.querySelector(".button-bar-wrapper button");
 
@@ -442,7 +461,7 @@ async function activateBot() {
       } catch (e) {
         console.error(
           "S: Fatal error caught in main bot loop wrapper. Restarting in 500ms.",
-          e
+          e,
         );
       }
 
@@ -500,12 +519,12 @@ chrome.storage.local.get("isBotEnabled", (result) => {
 
   if (isEnabled) {
     console.log(
-      "S: Content script re-initialized. Bot was active, restarting loop."
+      "S: Content script re-initialized. Bot was active, restarting loop.",
     );
     activateBot();
   } else {
     console.log(
-      "S: Content script re-initialized. Bot is currently deactivated."
+      "S: Content script re-initialized. Bot is currently deactivated.",
     );
   }
 
