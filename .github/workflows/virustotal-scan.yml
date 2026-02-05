@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag to scan (e.g., v1.0.0). Leave empty for latest.'
+        description: 'Release tag to scan (leave empty for latest)'
         required: false
         default: ''
 
@@ -26,14 +26,13 @@ jobs:
             echo "::error::VIRUSTOTAL_API_KEY secret is not set"
             exit 1
           fi
-          echo "✓ API key is configured"
+          echo "API key is configured"
 
       - name: Get Release Info
         id: release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Determine which release to scan
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             if [ -z "${{ inputs.release_tag }}" ]; then
               echo "Fetching latest release..."
@@ -47,14 +46,12 @@ jobs:
             RELEASE_DATA=$(gh api repos/${{ github.repository }}/releases/${{ github.event.release.id }})
           fi
 
-          # Extract release info
           TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
           RELEASE_ID=$(echo "$RELEASE_DATA" | jq -r '.id')
 
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "id=$RELEASE_ID" >> $GITHUB_OUTPUT
 
-          # Get zip asset
           ZIP_URL=$(echo "$RELEASE_DATA" | jq -r '.assets[] | select(.name | endswith(".zip")) | .browser_download_url' | head -1)
           ZIP_NAME=$(echo "$RELEASE_DATA" | jq -r '.assets[] | select(.name | endswith(".zip")) | .name' | head -1)
 
@@ -66,11 +63,9 @@ jobs:
           echo "zip_url=$ZIP_URL" >> $GITHUB_OUTPUT
           echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
 
-          # Store body for later (base64 to preserve formatting)
-          echo "$RELEASE_DATA" | jq -r '.body // ""' | base64 -w 0 > /tmp/release_body.b64
+          echo "$RELEASE_DATA" | jq -r '.body // ""' > /tmp/release_body.txt
 
-          echo "✓ Release: $TAG"
-          echo "✓ Asset: $ZIP_NAME"
+          echo "Found release: $TAG with asset: $ZIP_NAME"
 
       - name: Download Release Asset
         run: |
@@ -83,33 +78,29 @@ jobs:
           fi
 
           FILE_SIZE=$(stat -c%s release.zip 2>/dev/null || stat -f%z release.zip)
-          echo "✓ Downloaded: $FILE_SIZE bytes"
+          echo "Downloaded: $FILE_SIZE bytes"
 
-          # Calculate SHA256
           SHA256=$(sha256sum release.zip | cut -d' ' -f1)
           echo "SHA256=$SHA256" >> $GITHUB_ENV
-          echo "✓ SHA256: $SHA256"
+          echo "SHA256: $SHA256"
 
       - name: Check for Existing Scan
         id: cache
         run: |
           echo "Checking VirusTotal for existing scan..."
 
-          HTTP_RESPONSE=$(curl -s -w "HTTPSTATUS:%{http_code}" \
+          HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/vt_check.json \
             --request GET \
             --url "https://www.virustotal.com/api/v3/files/${{ env.SHA256 }}" \
             --header "x-apikey: ${{ secrets.VIRUSTOTAL_API_KEY }}")
 
-          HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed -e 's/HTTPSTATUS\:.*//g')
-          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
-
-          if [ "$HTTP_STATUS" -eq 200 ]; then
+          if [ "$HTTP_CODE" -eq 200 ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "$HTTP_BODY" > /tmp/vt_result.json
-            echo "✓ Found existing scan"
+            cp /tmp/vt_check.json /tmp/vt_result.json
+            echo "Found existing scan"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "→ No existing scan found, will upload"
+            echo "No existing scan found, will upload"
           fi
 
       - name: Upload to VirusTotal
@@ -118,60 +109,52 @@ jobs:
         run: |
           echo "Uploading to VirusTotal..."
 
-          HTTP_RESPONSE=$(curl -s -w "HTTPSTATUS:%{http_code}" \
+          HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/upload_response.json \
             --request POST \
             --url "https://www.virustotal.com/api/v3/files" \
             --header "x-apikey: ${{ secrets.VIRUSTOTAL_API_KEY }}" \
             --form "file=@release.zip")
 
-          HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed -e 's/HTTPSTATUS\:.*//g')
-          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
-
-          if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "::error::Upload failed (HTTP $HTTP_STATUS)"
-            echo "$HTTP_BODY"
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "::error::Upload failed (HTTP $HTTP_CODE)"
+            cat /tmp/upload_response.json
             exit 1
           fi
 
-          ANALYSIS_ID=$(echo "$HTTP_BODY" | jq -r '.data.id')
+          ANALYSIS_ID=$(jq -r '.data.id' /tmp/upload_response.json)
           echo "analysis_id=$ANALYSIS_ID" >> $GITHUB_OUTPUT
-          echo "✓ Upload complete, analysis ID: $ANALYSIS_ID"
+          echo "Upload complete, analysis ID: $ANALYSIS_ID"
 
       - name: Wait for Analysis
         if: steps.cache.outputs.exists != 'true'
         run: |
-          echo "Waiting for VirusTotal analysis to complete..."
+          echo "Waiting for VirusTotal analysis..."
           ANALYSIS_ID="${{ steps.upload.outputs.analysis_id }}"
 
           for i in $(seq 1 30); do
             echo "Polling attempt $i/30..."
 
-            RESPONSE=$(curl -s \
+            curl -s -o /tmp/analysis_status.json \
               --request GET \
               --url "https://www.virustotal.com/api/v3/analyses/$ANALYSIS_ID" \
-              --header "x-apikey: ${{ secrets.VIRUSTOTAL_API_KEY }}")
+              --header "x-apikey: ${{ secrets.VIRUSTOTAL_API_KEY }}"
 
-            STATUS=$(echo "$RESPONSE" | jq -r '.data.attributes.status')
+            STATUS=$(jq -r '.data.attributes.status' /tmp/analysis_status.json)
 
             if [ "$STATUS" = "completed" ]; then
-              echo "✓ Analysis complete"
+              echo "Analysis complete"
 
-              # Fetch full file report
-              curl -s \
+              curl -s -o /tmp/vt_result.json \
                 --request GET \
                 --url "https://www.virustotal.com/api/v3/files/${{ env.SHA256 }}" \
-                --header "x-apikey: ${{ secrets.VIRUSTOTAL_API_KEY }}" > /tmp/vt_result.json
+                --header "x-apikey: ${{ secrets.VIRUSTOTAL_API_KEY }}"
 
               break
             fi
 
-            echo "  Status: $STATUS - waiting 20s..."
+            echo "Status: $STATUS - waiting 20s..."
             sleep 20
           done
-
-          if [ ! -f /tmp/vt_result.json ]; then
-            echo "::warning::Analysis timed out"
-          fi
 
       - name: Parse Results
         id: results
@@ -181,7 +164,6 @@ jobs:
             exit 1
           fi
 
-          # Parse stats
           MALICIOUS=$(jq -r '.data.attributes.last_analysis_stats.malicious // 0' /tmp/vt_result.json)
           SUSPICIOUS=$(jq -r '.data.attributes.last_analysis_stats.suspicious // 0' /tmp/vt_result.json)
           UNDETECTED=$(jq -r '.data.attributes.last_analysis_stats.undetected // 0' /tmp/vt_result.json)
@@ -192,7 +174,6 @@ jobs:
           THREATS=$((MALICIOUS + SUSPICIOUS))
           CLEAN=$((UNDETECTED + HARMLESS))
 
-          # Determine badge color
           if [ "$THREATS" -eq 0 ]; then
             BADGE_COLOR="brightgreen"
             STATUS_EMOJI="✅"
@@ -209,7 +190,6 @@ jobs:
 
           VT_URL="https://www.virustotal.com/gui/file/${{ env.SHA256 }}"
 
-          # Output results
           echo "malicious=$MALICIOUS" >> $GITHUB_OUTPUT
           echo "suspicious=$SUSPICIOUS" >> $GITHUB_OUTPUT
           echo "clean=$CLEAN" >> $GITHUB_OUTPUT
@@ -221,72 +201,89 @@ jobs:
           echo "vt_url=$VT_URL" >> $GITHUB_OUTPUT
 
           echo ""
-          echo "════════════════════════════════════════════"
+          echo "========================================"
           echo "  VirusTotal Scan Results"
-          echo "════════════════════════════════════════════"
+          echo "========================================"
           echo "  Status:     $STATUS_EMOJI $STATUS_TEXT"
           echo "  Score:      $THREATS / $TOTAL threats"
           echo "  Malicious:  $MALICIOUS"
           echo "  Suspicious: $SUSPICIOUS"
           echo "  Clean:      $CLEAN"
           echo "  Report:     $VT_URL"
-          echo "════════════════════════════════════════════"
+          echo "========================================"
 
       - name: Update Release Notes
         env:
           GH_TOKEN: ${{ github.token }}
+          STATUS_EMOJI: ${{ steps.results.outputs.status_emoji }}
+          THREATS: ${{ steps.results.outputs.threats }}
+          TOTAL: ${{ steps.results.outputs.total }}
+          MALICIOUS: ${{ steps.results.outputs.malicious }}
+          SUSPICIOUS: ${{ steps.results.outputs.suspicious }}
+          CLEAN_COUNT: ${{ steps.results.outputs.clean }}
+          VT_URL: ${{ steps.results.outputs.vt_url }}
+          RELEASE_ID: ${{ steps.release.outputs.id }}
         run: |
-          # Get current body
-          CURRENT_BODY=$(cat /tmp/release_body.b64 | base64 -d || echo "")
+          CURRENT_BODY=$(cat /tmp/release_body.txt || echo "")
 
-          # Remove existing security section if present
-          CLEAN_BODY=$(echo "$CURRENT_BODY" | awk '/^## 🛡️ Security Scan/{flag=1; next} /^## /{flag=0} !flag')
+          CLEAN_BODY=$(echo "$CURRENT_BODY" | awk '/^## 🛡️ Security Scan/{found=1} found && /^## [^🛡]/{found=0; print} !found{print}' | sed '/^## 🛡️ Security Scan$/d')
 
-          # Build security section
-          SECURITY_SECTION="## 🛡️ Security Scan
+          SECURITY_SECTION=$(cat << EOSEC
+          ## 🛡️ Security Scan
 
-${{ steps.results.outputs.status_emoji }} **VirusTotal Result:** \`${{ steps.results.outputs.threats }}/${{ steps.results.outputs.total }}\` threats detected
+          ${STATUS_EMOJI} **VirusTotal Result:** \`${THREATS}/${TOTAL}\` threats detected
 
-| Check | Result |
-|-------|--------|
-| Malicious | ${{ steps.results.outputs.malicious }} |
-| Suspicious | ${{ steps.results.outputs.suspicious }} |
-| Clean | ${{ steps.results.outputs.clean }} |
+          | Check | Result |
+          |-------|--------|
+          | Malicious | ${MALICIOUS} |
+          | Suspicious | ${SUSPICIOUS} |
+          | Clean | ${CLEAN_COUNT} |
 
-📋 [View Full VirusTotal Report](${{ steps.results.outputs.vt_url }})"
+          📋 [View Full VirusTotal Report](${VT_URL})
+          EOSEC
+          )
 
-          # Combine
-          NEW_BODY="$CLEAN_BODY
+          NEW_BODY="${CLEAN_BODY}
 
-$SECURITY_SECTION"
+          ${SECURITY_SECTION}"
 
-          # Update via API
           gh api \
             --method PATCH \
-            "repos/${{ github.repository }}/releases/${{ steps.release.outputs.id }}" \
+            "repos/${{ github.repository }}/releases/${RELEASE_ID}" \
             -f body="$NEW_BODY"
 
-          echo "✓ Release notes updated with security scan results"
+          echo "Release notes updated with security scan results"
 
       - name: Job Summary
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          ZIP_NAME: ${{ steps.release.outputs.zip_name }}
+          STATUS_EMOJI: ${{ steps.results.outputs.status_emoji }}
+          STATUS_TEXT: ${{ steps.results.outputs.status_text }}
+          THREATS: ${{ steps.results.outputs.threats }}
+          TOTAL: ${{ steps.results.outputs.total }}
+          MALICIOUS: ${{ steps.results.outputs.malicious }}
+          SUSPICIOUS: ${{ steps.results.outputs.suspicious }}
+          CLEAN_COUNT: ${{ steps.results.outputs.clean }}
+          VT_URL: ${{ steps.results.outputs.vt_url }}
         run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> $GITHUB_STEP_SUMMARY << EOF
           ## 🛡️ VirusTotal Security Scan
 
           | Property | Value |
           |----------|-------|
-          | Release | `${{ steps.release.outputs.tag }}` |
-          | File | `${{ steps.release.outputs.zip_name }}` |
-          | SHA256 | `${{ env.SHA256 }}` |
-          | Status | ${{ steps.results.outputs.status_emoji }} ${{ steps.results.outputs.status_text }} |
-          | Threats | ${{ steps.results.outputs.threats }} / ${{ steps.results.outputs.total }} |
+          | Release | \`${TAG}\` |
+          | File | \`${ZIP_NAME}\` |
+          | SHA256 | \`${{ env.SHA256 }}\` |
+          | Status | ${STATUS_EMOJI} ${STATUS_TEXT} |
+          | Threats | ${THREATS} / ${TOTAL} |
 
           ### Breakdown
-          - 🔴 Malicious: ${{ steps.results.outputs.malicious }}
-          - 🟡 Suspicious: ${{ steps.results.outputs.suspicious }}
-          - 🟢 Clean: ${{ steps.results.outputs.clean }}
+          - 🔴 Malicious: ${MALICIOUS}
+          - 🟡 Suspicious: ${SUSPICIOUS}
+          - 🟢 Clean: ${CLEAN_COUNT}
 
-          [📋 View Full Report](${{ steps.results.outputs.vt_url }})
+          [📋 View Full Report](${VT_URL})
           EOF
 
       - name: Fail if Malicious
