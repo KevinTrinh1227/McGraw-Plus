@@ -12,29 +12,77 @@ document.addEventListener("DOMContentLoaded", () => {
   const statusMessage = document.getElementById("status-message");
   const toggleButton = document.getElementById("toggle-bot");
 
+  // --- Update Banner Elements ---
+  const updateBanner = document.getElementById("update-banner");
+  const updateText = document.getElementById("update-text");
+  const updateLink = document.getElementById("update-link");
+  const updateDismiss = document.getElementById("update-dismiss");
+
+  // --- Version Display ---
+  const versionDisplay = document.getElementById("version-display");
+
   const AGREEMENT_KEY = "hasAgreedToDisclaimer";
   const MAIN_HEADER_HTML =
     '<img src="logo.png" alt="Extension Icon" class="header-logo"> McGraw-Hill SmartBook Solver';
 
-  // Define the target URL pattern for enabling the toggle button
   const TARGET_URL_PATTERN = "mheducation.com";
 
-  // Helper function for delays
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  // --- Version Display ---
+  function showVersion() {
+    if (versionDisplay) {
+      const version = chrome.runtime.getManifest().version;
+      versionDisplay.textContent = `v${version} · `;
+    }
+  }
+
+  // --- Update Banner Logic ---
+  function checkForUpdateUI() {
+    chrome.storage.local.get(
+      ["updateAvailable", "updateVersion", "updateUrl", "dismissedUpdateVersion"],
+      (result) => {
+        if (
+          result.updateAvailable &&
+          result.updateVersion &&
+          result.dismissedUpdateVersion !== result.updateVersion
+        ) {
+          updateText.textContent = `Update available: v${result.updateVersion}`;
+          updateLink.href = result.updateUrl || "#";
+          updateBanner.style.display = "flex";
+        } else {
+          updateBanner.style.display = "none";
+        }
+      }
+    );
+  }
+
+  if (updateDismiss) {
+    updateDismiss.addEventListener("click", () => {
+      chrome.storage.local.get("updateVersion", (result) => {
+        if (result.updateVersion) {
+          chrome.storage.local.set({
+            dismissedUpdateVersion: result.updateVersion,
+          });
+        }
+        updateBanner.style.display = "none";
+      });
+    });
   }
 
   // --- Screen Switching Logic ---
 
   function showMainScreen() {
-    // Correctly saves the agreement status to storage
     chrome.storage.local.set({ [AGREEMENT_KEY]: true });
     document.title = "McGraw-Hill SmartBook Solver";
     mainHeaderTitle.innerHTML = MAIN_HEADER_HTML;
     readmeScreen.style.display = "none";
     mainScreen.style.display = "block";
 
-    // Resume original solver initialization/status check
+    showVersion();
+    checkForUpdateUI();
     checkBotStatusAndInitUI();
   }
 
@@ -59,39 +107,32 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Bot Logic Functions ---
 
   function updateUI(isEnabled) {
-    // This function now only handles the visual state based on the global setting
-    // It is called when we ARE on the target page.
     toggleButton.disabled = false;
 
     if (isEnabled) {
-      statusMessage.innerHTML = "Bot Status: <strong>ACTIVE 🟢</strong>";
-      toggleButton.textContent = "❌ Deactivate Bot";
+      statusMessage.innerHTML = "Bot Status: <strong>ACTIVE</strong>";
+      toggleButton.textContent = "Deactivate Bot";
       toggleButton.className = "inactive";
     } else {
-      statusMessage.innerHTML = "Bot Status: <strong>INACTIVE 🔴</strong>";
-      toggleButton.textContent = "🚀 Activate Bot";
+      statusMessage.innerHTML = "Bot Status: <strong>INACTIVE</strong>";
+      toggleButton.textContent = "Activate Bot";
       toggleButton.className = "active";
     }
   }
 
-  // 🔑 UPDATED: Takes the current bot state as an argument
   function handleNotOnTargetPage(isBotEnabled) {
-    // Disable the button and show a helpful message
     toggleButton.disabled = true;
     toggleButton.textContent = "Must be on McGraw-Hill site to Toggle on/off";
-    toggleButton.className = ""; // Remove active/inactive classes for neutral look
+    toggleButton.className = "";
 
-    // 🔑 NEW LOGIC: Display the actual global status, but indicate the button is locked
     if (isBotEnabled) {
       statusMessage.innerHTML =
-        "Bot Status: <strong>ACTIVE 🟢 (Running in Background)</strong>";
+        "Bot Status: <strong>ACTIVE (Running in Background)</strong>";
     } else {
-      statusMessage.innerHTML = "Bot Status: <strong>INACTIVE 🔴</strong>";
+      statusMessage.innerHTML = "Bot Status: <strong>INACTIVE</strong>";
     }
   }
 
-  // 🔑 MODIFIED: Targets only the active tab that is relevant, and injects script if needed.
-  // Now uses retry logic for reliable activation.
   async function sendBotCommand(action) {
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       const activeTab = tabs[0];
@@ -110,23 +151,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
-          // 1. Try to send the message
           await new Promise((resolve, reject) => {
             chrome.tabs.sendMessage(activeTab.id, action, (response) => {
               if (chrome.runtime.lastError) {
-                // Reject the promise if there is an error
                 reject(chrome.runtime.lastError);
               } else {
                 resolve(response);
               }
             });
           });
-          // If successful, break the retry loop
           return;
         } catch (error) {
           const errorMsg = error.message;
 
-          // 2. Check if the error means the content script is not running
           if (
             errorMsg.includes("Could not establish connection") &&
             !scriptInjected
@@ -135,7 +172,6 @@ document.addEventListener("DOMContentLoaded", () => {
               `Attempt ${attempt}: Content script not running. Injecting contentSolver.js.`
             );
 
-            // NOTE: Using contentSolver.js as per the manifest fix.
             await chrome.scripting.executeScript({
               target: { tabId: activeTab.id },
               files: ["contentSolver.js"],
@@ -146,12 +182,10 @@ document.addEventListener("DOMContentLoaded", () => {
             errorMsg.includes("Could not establish connection") &&
             scriptInjected
           ) {
-            // Script is injected but still not ready; continue retry loop
             console.log(
               `Attempt ${attempt}: Script injected but listener not ready. Retrying...`
             );
           } else {
-            // Log other unexpected errors and stop retrying
             console.warn(
               "Warning: Message failed to send with unexpected error:",
               errorMsg
@@ -159,7 +193,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
           }
 
-          // Wait before the next attempt
           await sleep(200);
         }
       }
@@ -168,9 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Separate handler function for cleaner removal/re-adding of listener
   const toggleBotHandler = () => {
-    // Check if the button is currently disabled by our logic before proceeding
     if (toggleButton.disabled) {
       return;
     }
@@ -179,33 +210,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const newAction = isCurrentlyActive ? "deactivate" : "activate";
     const newState = !isCurrentlyActive;
 
-    // 1. Update the local UI state first
     updateUI(newState);
-
-    // 2. Send the command to the active tab (which will also update the global storage state)
     sendBotCommand(newAction);
   };
 
   function checkBotStatusAndInitUI() {
-    // 1. Ensure any old listener is removed before proceeding
     toggleButton.removeEventListener("click", toggleBotHandler);
 
-    // 2. Check the current active tab's URL
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const currentUrl = tabs[0]?.url || "";
 
-      // 3. Load initial status from storage (global state)
       chrome.storage.local.get("isBotEnabled", (storageResult) => {
         const isBotEnabled = storageResult.isBotEnabled === true;
 
         if (currentUrl.includes(TARGET_URL_PATTERN)) {
-          // On target page: Update UI to show global status and make button clickable
           updateUI(isBotEnabled);
-          // 4. Add the click listener (runs after status check due to event loop)
           toggleButton.addEventListener("click", toggleBotHandler);
         } else {
-          // Not on target page: Inform user, show the state, and disable the button
-          // 🔑 PASSING isBotEnabled HERE
           handleNotOnTargetPage(isBotEnabled);
         }
       });
@@ -214,7 +235,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Initialization ---
 
-  // Check if the user has previously agreed
   chrome.storage.local.get(AGREEMENT_KEY, (result) => {
     if (result[AGREEMENT_KEY]) {
       showMainScreen();

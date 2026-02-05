@@ -11,7 +11,7 @@
       <!-- 1. READ ME SCREEN (Initially Visible) -->
       <div id="readme-screen">
         <header>
-          <h1>⚠️ Important Info (Read Me)</h1>
+          <h1>Important Info (Read Me)</h1>
         </header>
         <div class="content">
           <div class="disclaimer-text">
@@ -45,10 +45,18 @@
       <!-- 2. MAIN SOLVER SCREEN (Initially Hidden, Shown After Agreement) -->
       <div id="main-screen" style="display: none">
         <header>
-          <!-- The title and logo will be injected/updated by index.js after agreement -->
           <h1 id="main-header-title"></h1>
         </header>
         <div class="content">
+          <!-- Update Banner (hidden by default) -->
+          <div id="update-banner" style="display: none">
+            <span id="update-text"></span>
+            <div class="update-actions">
+              <a id="update-link" href="#" target="_blank">Download</a>
+              <button id="update-dismiss" title="Dismiss">Dismiss</button>
+            </div>
+          </div>
+
           <div class="bot-header-description">
             <p>
               Automatically solves McGrawHill SmartBook concept questions. Built
@@ -60,7 +68,6 @@
           </p>
           <button id="toggle-bot" disabled>Toggle Bot</button>
 
-          <!-- NEW HINT TEXT ADDED HERE -->
           <p class="toggle-hint-text">
             If the on/off button doesn't work, refresh the SmartBook site and
             try again.
@@ -74,7 +81,7 @@
             id="download-extension"
             class="action-button"
           >
-            ⬇️ Download Extension
+            Download Extension
           </a>
           <a
             href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver#installation-and-usage-guide"
@@ -82,16 +89,15 @@
             id="how-to-use"
             class="action-button"
           >
-            📖 How To Use
+            How To Use
           </a>
         </div>
 
         <div class="footer">
-          <!-- 📝 UPDATED: Developer info and portfolio link added -->
           <p class="developer-info">
-            Built by: <strong>Kevin Huy Trinh</strong> |
-            <a href="https://www.kevintrinh.dev" target="_blank"
-              >www.kevintrinh.dev</a
+            <span id="version-display"></span>
+            <a href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver" target="_blank"
+              >GitHub</a
             >
           </p>
         </div>
