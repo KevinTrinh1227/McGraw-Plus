@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>McGraw Plus Dashboard</title>
+  <link href="dashboard.css" rel="stylesheet" />
+</head>
+<body>
+  <div id="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="logo">📚</span>
+        <span class="title">McGraw Plus</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="overview">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          <span>Overview</span>
+        </button>
+        <button class="nav-item" data-tab="calendar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span>Calendar</span>
+        </button>
+        <button class="nav-item" data-tab="todo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          <span>To-Do</span>
+        </button>
+        <button class="nav-item" data-tab="stats">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <span>Stats</span>
+        </button>
+        <button class="nav-item" data-tab="flashcards">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <path d="M12 12h.01"/>
+          </svg>
+          <span>Flashcards</span>
+        </button>
+        <button class="nav-item" data-tab="export">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Export</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="version">v<span id="version">2.0.0</span></span>
+        <a href="https://github.com/KevinTrinh1227/McGraw-Plus" target="_blank" class="github-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="main-header">
+        <div class="header-left">
+          <h1 id="page-title">Overview</h1>
+        </div>
+        <div class="header-right">
+          <span id="user-greeting" class="user-greeting"></span>
+        </div>
+      </header>
+
+      <!-- Content Container -->
+      <div class="content-container">
+        <!-- Overview Tab -->
+        <section id="tab-overview" class="tab-panel active">
+          <!-- Quick Stats -->
+          <div class="quick-stats">
+            <div class="stat-card">
+              <div class="stat-icon questions">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="overview-questions">0</span>
+                <span class="stat-label">Questions Answered</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon accuracy">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="overview-accuracy">0%</span>
+                <span class="stat-label">Accuracy</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon time">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="overview-time">0h</span>
+                <span class="stat-label">Study Time</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon streak">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="overview-streak">0</span>
+                <span class="stat-label">Day Streak</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Overdue Warning -->
+          <div id="overdue-warning" class="warning-banner hidden">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span id="overdue-text">You have overdue assignments!</span>
+          </div>
+
+          <!-- Upcoming Assignments -->
+          <div class="section">
+            <div class="section-header">
+              <h2>Upcoming Assignments</h2>
+              <button class="btn-link" data-goto="todo">View all</button>
+            </div>
+            <div id="upcoming-list" class="assignment-list">
+              <div class="empty-state">
+                <p>No upcoming assignments</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="section">
+            <div class="section-header">
+              <h2>Recent Activity</h2>
+            </div>
+            <div id="recent-activity" class="activity-list">
+              <div class="empty-state">
+                <p>No recent activity</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Calendar Tab -->
+        <section id="tab-calendar" class="tab-panel">
+          <div class="calendar-container">
+            <div class="calendar-header">
+              <button id="cal-prev" class="cal-nav-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+              </button>
+              <h2 id="cal-month-year">February 2026</h2>
+              <button id="cal-next" class="cal-nav-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+              <button id="cal-today" class="btn small outline">Today</button>
+            </div>
+            <div class="calendar-weekdays">
+              <span>Sun</span>
+              <span>Mon</span>
+              <span>Tue</span>
+              <span>Wed</span>
+              <span>Thu</span>
+              <span>Fri</span>
+              <span>Sat</span>
+            </div>
+            <div id="calendar-grid" class="calendar-grid">
+              <!-- Days will be generated by JS -->
+            </div>
+          </div>
+          <div id="calendar-details" class="calendar-details">
+            <h3 id="details-date">Select a day</h3>
+            <div id="details-list" class="details-list">
+              <div class="empty-state">
+                <p>Click a day to see assignments</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- To-Do Tab -->
+        <section id="tab-todo" class="tab-panel">
+          <div class="todo-controls">
+            <div class="filter-group">
+              <button class="filter-btn active" data-filter="all">All</button>
+              <button class="filter-btn" data-filter="upcoming">Upcoming</button>
+              <button class="filter-btn" data-filter="overdue">Overdue</button>
+              <button class="filter-btn" data-filter="completed">Completed</button>
+            </div>
+            <div class="sort-group">
+              <label>Sort by:</label>
+              <select id="todo-sort" class="select-input">
+                <option value="dueDate">Due Date</option>
+                <option value="course">Course</option>
+                <option value="type">Type</option>
+              </select>
+            </div>
+          </div>
+          <div id="todo-list" class="todo-list">
+            <div class="empty-state">
+              <p>No assignments found</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Stats Tab -->
+        <section id="tab-stats" class="tab-panel">
+          <div class="stats-grid">
+            <!-- Activity Heatmap -->
+            <div class="stats-section heatmap-section">
+              <h3>Activity (Last 52 Weeks)</h3>
+              <div class="heatmap-container">
+                <div class="heatmap-months" id="heatmap-months"></div>
+                <div class="heatmap-wrapper">
+                  <div class="heatmap-days">
+                    <span>Mon</span>
+                    <span>Wed</span>
+                    <span>Fri</span>
+                  </div>
+                  <div id="heatmap-grid" class="heatmap-grid"></div>
+                </div>
+                <div class="heatmap-legend">
+                  <span>Less</span>
+                  <div class="legend-cells">
+                    <div class="heatmap-cell level-0"></div>
+                    <div class="heatmap-cell level-1"></div>
+                    <div class="heatmap-cell level-2"></div>
+                    <div class="heatmap-cell level-3"></div>
+                    <div class="heatmap-cell level-4"></div>
+                  </div>
+                  <span>More</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Question Types -->
+            <div class="stats-section chart-section">
+              <h3>Question Types</h3>
+              <div class="chart-container">
+                <div id="pie-chart" class="pie-chart"></div>
+                <div id="chart-legend" class="chart-legend"></div>
+              </div>
+            </div>
+
+            <!-- Streak Card -->
+            <div class="stats-section streak-section">
+              <h3>Current Streak</h3>
+              <div class="streak-display">
+                <span class="streak-fire">🔥</span>
+                <span class="streak-number" id="stats-streak">0</span>
+                <span class="streak-label">days</span>
+              </div>
+              <div class="streak-meta">
+                <span>Best: <strong id="best-streak">0</strong> days</span>
+              </div>
+            </div>
+
+            <!-- Time Stats -->
+            <div class="stats-section time-section">
+              <h3>Study Time</h3>
+              <div class="time-stats">
+                <div class="time-stat">
+                  <span class="time-value" id="total-time">0h 0m</span>
+                  <span class="time-label">Total</span>
+                </div>
+                <div class="time-stat">
+                  <span class="time-value" id="avg-session">0m</span>
+                  <span class="time-label">Avg Session</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accuracy Stats -->
+            <div class="stats-section accuracy-section">
+              <h3>Accuracy</h3>
+              <div class="accuracy-display">
+                <div class="accuracy-ring" id="accuracy-ring">
+                  <span id="stats-accuracy">0%</span>
+                </div>
+                <div class="accuracy-meta">
+                  <span><strong id="correct-count">0</strong> correct first try</span>
+                  <span>out of <strong id="total-count">0</strong> questions</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Flashcards Tab -->
+        <section id="tab-flashcards" class="tab-panel">
+          <div class="flashcards-header">
+            <div class="flashcards-info">
+              <span id="flashcard-count">0 flashcards</span>
+              <button id="generate-flashcards" class="btn small primary">Generate from Q&A</button>
+            </div>
+            <div class="view-toggle">
+              <button class="view-btn active" data-view="grid">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                  <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                </svg>
+              </button>
+              <button class="view-btn" data-view="list">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+                  <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+                  <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Review Mode -->
+          <div id="review-mode" class="review-mode hidden">
+            <div class="review-header">
+              <span id="review-progress">1 / 10</span>
+              <button id="exit-review" class="btn small outline">Exit Review</button>
+            </div>
+            <div id="flashcard-review" class="flashcard-review">
+              <div class="flashcard" id="current-card">
+                <div class="flashcard-inner">
+                  <div class="flashcard-front">
+                    <p id="card-front-text">Question</p>
+                  </div>
+                  <div class="flashcard-back">
+                    <p id="card-back-text">Answer</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="review-controls">
+              <button id="prev-card" class="btn outline">Previous</button>
+              <button id="flip-card" class="btn primary">Flip</button>
+              <button id="next-card" class="btn outline">Next</button>
+            </div>
+          </div>
+
+          <!-- Card Grid -->
+          <div id="flashcard-grid" class="flashcard-grid">
+            <div class="empty-state">
+              <p>No flashcards yet. Generate some from your Q&A data!</p>
+            </div>
+          </div>
+
+          <div class="flashcards-actions">
+            <button id="start-review" class="btn primary" disabled>Start Review</button>
+          </div>
+        </section>
+
+        <!-- Export Tab -->
+        <section id="tab-export" class="tab-panel">
+          <div class="export-grid">
+            <!-- Calendar Export -->
+            <div class="export-card">
+              <div class="export-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <h3>Google Calendar</h3>
+              <p>Download an .ics file with all your assignments as calendar events with reminders.</p>
+              <button id="export-ics" class="btn primary">Download .ics</button>
+            </div>
+
+            <!-- Anki Export -->
+            <div class="export-card">
+              <div class="export-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="6" width="20" height="12" rx="2"/>
+                  <path d="M12 12h.01"/>
+                </svg>
+              </div>
+              <h3>Anki</h3>
+              <p>Export flashcards in tab-separated format for easy import into Anki.</p>
+              <button id="export-anki" class="btn primary">Download for Anki</button>
+            </div>
+
+            <!-- Quizlet Export -->
+            <div class="export-card">
+              <div class="export-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+              </div>
+              <h3>Quizlet</h3>
+              <p>Export flashcards in Quizlet-compatible format for easy import.</p>
+              <button id="export-quizlet" class="btn primary">Download for Quizlet</button>
+            </div>
+
+            <!-- Notion Export -->
+            <div class="export-card">
+              <div class="export-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22 6 12 13 2 6"/>
+                </svg>
+              </div>
+              <h3>Notion</h3>
+              <p>Sync your assignments to a Notion database. Requires API setup.</p>
+              <button id="notion-settings-btn" class="btn outline">Configure</button>
+              <button id="export-notion" class="btn primary" disabled>Sync to Notion</button>
+            </div>
+
+            <!-- JSON Export -->
+            <div class="export-card">
+              <div class="export-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="16 18 22 12 16 6"/>
+                  <polyline points="8 6 2 12 8 18"/>
+                </svg>
+              </div>
+              <h3>JSON Export</h3>
+              <p>Download all your data as a JSON file for backup or analysis.</p>
+              <button id="export-json" class="btn primary">Download JSON</button>
+            </div>
+
+            <!-- CSV Export -->
+            <div class="export-card">
+              <div class="export-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="8" y1="13" x2="16" y2="13"/>
+                  <line x1="8" y1="17" x2="16" y2="17"/>
+                </svg>
+              </div>
+              <h3>CSV Export</h3>
+              <p>Export assignments as a CSV file for spreadsheet analysis.</p>
+              <button id="export-csv" class="btn primary">Download CSV</button>
+            </div>
+          </div>
+
+          <!-- Notion Settings Modal -->
+          <div id="notion-modal" class="modal hidden">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3>Notion Settings</h3>
+                <button id="close-notion-modal" class="modal-close">&times;</button>
+              </div>
+              <div class="modal-body">
+                <div class="form-group">
+                  <label for="notion-api-key">Integration Token</label>
+                  <input type="password" id="notion-api-key" class="input" placeholder="secret_..." />
+                  <small>Create an integration at <a href="https://www.notion.so/my-integrations" target="_blank">notion.so/my-integrations</a></small>
+                </div>
+                <div class="form-group">
+                  <label for="notion-database-id">Database ID</label>
+                  <input type="text" id="notion-database-id" class="input" placeholder="abc123..." />
+                  <small>The ID from your database URL</small>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button id="save-notion-settings" class="btn primary">Save</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Scripts -->
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/storage.js"></script>
+  <script src="components/calendar.js"></script>
+  <script src="components/todo.js"></script>
+  <script src="components/stats.js"></script>
+  <script src="components/flashcards.js"></script>
+  <script src="components/export.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>
