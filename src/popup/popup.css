@@ -972,3 +972,312 @@ kbd {
 .popup-footer a:hover {
   color: var(--accent);
 }
+
+/* Onboarding Prompt */
+.onboarding-prompt-content {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.onboarding-prompt-content h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.onboarding-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+  max-width: 260px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Detection Status */
+.detection-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+}
+
+.detection-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--bg-tertiary);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.detection-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detection-icon.success svg {
+  color: var(--success);
+}
+
+/* Detected Profile */
+.detected-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.profile-avatar-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #818cf8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profile-avatar-small svg {
+  color: white;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.profile-info .profile-name {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-info .profile-email {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-info .profile-id {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: 'SF Mono', Menlo, Monaco, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.setup-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 10px;
+  transition: color var(--transition);
+}
+
+.setup-note.ready {
+  color: var(--success);
+  font-weight: 500;
+}
+
+/* Profile View */
+.profile-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-card {
+  background: linear-gradient(135deg, var(--accent), #818cf8);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+}
+
+.profile-avatar {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.profile-name {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.profile-locked {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.profile-stats {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 4px 0;
+}
+
+.profile-stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-stat-row:last-child {
+  border-bottom: none;
+}
+
+.profile-stat-row span:last-child {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Experimental Tab */
+.experimental-header {
+  text-align: center;
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+}
+
+.experimental-badge {
+  display: inline-block;
+  background: var(--danger);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.experimental-header p {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.toggle-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  padding: 0 14px;
+}
+
+.toggle-note {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  padding: 0 14px;
+  font-style: italic;
+}
+
+/* Support Section (Share View) */
+.support-section {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+
+.support-section h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.support-section p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.support-section a {
+  text-decoration: none;
+}
+
+.support-section a:hover {
+  text-decoration: none;
+}
+
+/* Setup Content (Pre-onboarding) */
+.setup-content {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.setup-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.9;
+}
+
+.setup-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.setup-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+  max-width: 260px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.setup-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+
+.setup-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  font-size: 11px;
+}
+
+.setup-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.setup-links a:hover {
+  color: var(--accent);
+}
+
+.setup-links .divider {
+  color: var(--text-muted);
+  opacity: 0.5;
+}

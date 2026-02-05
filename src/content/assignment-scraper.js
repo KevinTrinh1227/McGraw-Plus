@@ -10,16 +10,70 @@
   // Prevent double initialization
   if (window.MP_AssignmentScraper) return;
 
+  /**
+   * Check if extension context is still valid
+   */
+  function isContextValid() {
+    try {
+      return !!(chrome && chrome.runtime && chrome.runtime.id);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Safe wrapper for chrome.storage operations
+   */
+  async function safeStorageGet(keys) {
+    if (!isContextValid()) return {};
+    try {
+      return await chrome.storage.local.get(keys);
+    } catch (e) {
+      if (e.message?.includes('Extension context invalidated')) {
+        AssignmentScraper.handleContextInvalidated();
+      }
+      return {};
+    }
+  }
+
+  async function safeStorageSet(data) {
+    if (!isContextValid()) return false;
+    try {
+      await chrome.storage.local.set(data);
+      return true;
+    } catch (e) {
+      if (e.message?.includes('Extension context invalidated')) {
+        AssignmentScraper.handleContextInvalidated();
+      }
+      return false;
+    }
+  }
+
+  async function safeStorageRemove(keys) {
+    if (!isContextValid()) return false;
+    try {
+      await chrome.storage.local.remove(keys);
+      return true;
+    } catch (e) {
+      if (e.message?.includes('Extension context invalidated')) {
+        AssignmentScraper.handleContextInvalidated();
+      }
+      return false;
+    }
+  }
+
   const AssignmentScraper = {
     // State
     isInitialized: false,
     isScanning: false,
+    isContextInvalidated: false,
     lastScanTime: 0,
     observer: null,
     courses: [],
     assignments: [],
     tabCoordinatorId: null,
     retryCount: 0,
+    intervals: [],
 
     // Config
     SCAN_DEBOUNCE_MS: 1000,
@@ -102,13 +156,47 @@
     },
 
     /**
+     * Handle extension context being invalidated
+     */
+    handleContextInvalidated() {
+      if (this.isContextInvalidated) return;
+      this.isContextInvalidated = true;
+
+      console.log('[McGraw Plus] Extension context invalidated, cleaning up...');
+
+      // Clear all intervals
+      this.intervals.forEach(id => clearInterval(id));
+      this.intervals = [];
+
+      if (this.lockHeartbeat) {
+        clearInterval(this.lockHeartbeat);
+        this.lockHeartbeat = null;
+      }
+
+      // Disconnect observer
+      if (this.observer) {
+        this.observer.disconnect();
+        this.observer = null;
+      }
+
+      this.isInitialized = false;
+    },
+
+    /**
      * Initialize the scraper
      */
     async init() {
       if (this.isInitialized) return;
+      if (this.isContextInvalidated) return;
 
       // Only run on Connect dashboard pages
       if (!this.isConnectPage()) {
+        return;
+      }
+
+      // Check if context is valid
+      if (!isContextValid()) {
+        console.log('[McGraw Plus] Extension context not valid, skipping initialization');
         return;
       }
 
@@ -152,11 +240,15 @@
      * Acquire scraper lock for multi-tab coordination
      */
     async acquireScraperLock() {
+      if (this.isContextInvalidated) return false;
+
       try {
         const domain = window.location.hostname;
         const lockKey = `${this.TAB_COORDINATOR_KEY}_${domain}`;
 
-        const result = await chrome.storage.local.get(lockKey);
+        const result = await safeStorageGet(lockKey);
+        if (this.isContextInvalidated) return false;
+
         const existingLock = result[lockKey];
 
         // Check if lock is stale (older than 30 seconds)
@@ -166,25 +258,35 @@
         }
 
         // Acquire lock
-        await chrome.storage.local.set({
+        const success = await safeStorageSet({
           [lockKey]: {
             tabId: this.tabCoordinatorId,
             timestamp: Date.now(),
           },
         });
+        if (!success || this.isContextInvalidated) return false;
 
         // Start heartbeat to keep lock alive
         this.lockHeartbeat = setInterval(async () => {
-          await chrome.storage.local.set({
+          if (this.isContextInvalidated) {
+            clearInterval(this.lockHeartbeat);
+            return;
+          }
+          await safeStorageSet({
             [lockKey]: {
               tabId: this.tabCoordinatorId,
               timestamp: Date.now(),
             },
           });
         }, 10000);
+        this.intervals.push(this.lockHeartbeat);
 
         return true;
       } catch (error) {
+        if (error.message?.includes('Extension context invalidated')) {
+          this.handleContextInvalidated();
+          return false;
+        }
         console.error('[McGraw Plus] Lock acquisition error:', error);
         return true; // Proceed anyway on error
       }
@@ -197,10 +299,11 @@
       try {
         if (this.lockHeartbeat) {
           clearInterval(this.lockHeartbeat);
+          this.lockHeartbeat = null;
         }
         const domain = window.location.hostname;
         const lockKey = `${this.TAB_COORDINATOR_KEY}_${domain}`;
-        await chrome.storage.local.remove(lockKey);
+        await safeStorageRemove(lockKey);
       } catch (error) {
         // Ignore errors on unload
       }
@@ -211,10 +314,13 @@
      */
     setupVisibilityListener() {
       document.addEventListener('visibilitychange', () => {
+        if (this.isContextInvalidated) return;
         if (document.visibilityState === 'visible') {
           // Refresh data when tab becomes visible
           this.lastScanTime = 0;
-          setTimeout(() => this.scan(), 500);
+          setTimeout(() => {
+            if (!this.isContextInvalidated) this.scan();
+          }, 500);
         }
       });
     },
@@ -223,16 +329,24 @@
      * Scan with retry logic
      */
     async scanWithRetry() {
+      if (this.isContextInvalidated) return;
+
       try {
         await this.scan();
         this.retryCount = 0;
       } catch (error) {
+        if (error.message?.includes('Extension context invalidated')) {
+          this.handleContextInvalidated();
+          return;
+        }
         console.error('[McGraw Plus] Scan error:', error);
-        if (this.retryCount < this.MAX_RETRY_COUNT) {
+        if (this.retryCount < this.MAX_RETRY_COUNT && !this.isContextInvalidated) {
           this.retryCount++;
           const delay = this.RETRY_DELAY_MS * Math.pow(2, this.retryCount - 1);
           console.log(`[McGraw Plus] Retrying in ${delay}ms (attempt ${this.retryCount})`);
-          setTimeout(() => this.scanWithRetry(), delay);
+          setTimeout(() => {
+            if (!this.isContextInvalidated) this.scanWithRetry();
+          }, delay);
         }
       }
     },
@@ -302,12 +416,20 @@
      * Load cached data from storage
      */
     async loadCachedData() {
+      if (this.isContextInvalidated) return;
+
       try {
-        const result = await chrome.storage.local.get([this.STORAGE_KEY, this.COURSES_KEY]);
+        const result = await safeStorageGet([this.STORAGE_KEY, this.COURSES_KEY]);
+        if (this.isContextInvalidated) return;
+
         this.assignments = result[this.STORAGE_KEY] || [];
         this.courses = result[this.COURSES_KEY] || [];
         console.log(`[McGraw Plus] Loaded ${this.courses.length} courses, ${this.assignments.length} assignments from cache`);
       } catch (error) {
+        if (error.message?.includes('Extension context invalidated')) {
+          this.handleContextInvalidated();
+          return;
+        }
         console.error('[McGraw Plus] Failed to load cached data:', error);
       }
     },
@@ -316,13 +438,21 @@
      * Save data to storage
      */
     async saveData() {
+      if (this.isContextInvalidated) return;
+
       try {
-        await chrome.storage.local.set({
+        const success = await safeStorageSet({
           [this.STORAGE_KEY]: this.assignments,
           [this.COURSES_KEY]: this.courses,
         });
-        console.log(`[McGraw Plus] Saved ${this.courses.length} courses, ${this.assignments.length} assignments`);
+        if (success && !this.isContextInvalidated) {
+          console.log(`[McGraw Plus] Saved ${this.courses.length} courses, ${this.assignments.length} assignments`);
+        }
       } catch (error) {
+        if (error.message?.includes('Extension context invalidated')) {
+          this.handleContextInvalidated();
+          return;
+        }
         console.error('[McGraw Plus] Failed to save data:', error);
       }
     },
@@ -331,6 +461,8 @@
      * Set up MutationObserver for dynamic content
      */
     setupObserver() {
+      if (this.isContextInvalidated) return;
+
       if (this.observer) {
         this.observer.disconnect();
       }
@@ -338,9 +470,13 @@
       let scanTimeout = null;
 
       this.observer = new MutationObserver((mutations) => {
+        if (this.isContextInvalidated) {
+          this.observer.disconnect();
+          return;
+        }
+
         // Check if any mutations are relevant
         const hasRelevantChanges = mutations.some(m => {
-          const target = m.target;
           if (m.type === 'childList' && m.addedNodes.length > 0) {
             // Check if added nodes might be assignments or courses
             for (const node of m.addedNodes) {
@@ -363,7 +499,7 @@
           // Debounce scans
           if (scanTimeout) clearTimeout(scanTimeout);
           scanTimeout = setTimeout(() => {
-            this.scan();
+            if (!this.isContextInvalidated) this.scan();
           }, this.SCAN_DEBOUNCE_MS);
         }
       });
@@ -378,23 +514,32 @@
      * Set up listener for SPA navigation
      */
     setupNavigationListener() {
+      if (this.isContextInvalidated) return;
+
       // Listen for URL changes (SPA navigation)
       let lastUrl = location.href;
 
       const checkNavigation = () => {
+        if (this.isContextInvalidated) return;
         if (location.href !== lastUrl) {
           lastUrl = location.href;
           console.log('[McGraw Plus] Navigation detected, rescanning...');
-          setTimeout(() => this.scan(), 500);
+          setTimeout(() => {
+            if (!this.isContextInvalidated) this.scan();
+          }, 500);
         }
       };
 
       // Check periodically for URL changes
-      setInterval(checkNavigation, 1000);
+      const navInterval = setInterval(checkNavigation, 1000);
+      this.intervals.push(navInterval);
 
       // Also listen for popstate
       window.addEventListener('popstate', () => {
-        setTimeout(() => this.scan(), 500);
+        if (this.isContextInvalidated) return;
+        setTimeout(() => {
+          if (!this.isContextInvalidated) this.scan();
+        }, 500);
       });
     },
 
@@ -402,6 +547,8 @@
      * Main scan function - scrapes all visible data
      */
     async scan() {
+      if (this.isContextInvalidated) return;
+
       // Rate limit scans
       const now = Date.now();
       if (now - this.lastScanTime < this.MIN_SCAN_INTERVAL_MS) {
@@ -417,9 +564,11 @@
       try {
         // Scan user profile
         const userProfile = this.scanUserProfile();
-        if (userProfile) {
+        if (userProfile && !this.isContextInvalidated) {
           await this.saveUserProfile(userProfile);
         }
+
+        if (this.isContextInvalidated) return;
 
         // Scan courses from dashboard
         const newCourses = this.scanCourses();
@@ -442,6 +591,8 @@
         this.mergeCourses(newCourses);
         this.mergeAssignments(allNewAssignments);
 
+        if (this.isContextInvalidated) return;
+
         // Save to storage
         await this.saveData();
 
@@ -449,6 +600,10 @@
         this.notifyUpdate();
 
       } catch (error) {
+        if (error.message?.includes('Extension context invalidated')) {
+          this.handleContextInvalidated();
+          return;
+        }
         console.error('[McGraw Plus] Scan failed:', error);
       } finally {
         this.isScanning = false;
@@ -541,18 +696,26 @@
      * Save user profile to storage
      */
     async saveUserProfile(profile) {
-      if (!profile) return;
+      if (!profile || this.isContextInvalidated) return;
 
       try {
-        const existing = await chrome.storage.local.get(this.USER_PROFILE_KEY);
+        const existing = await safeStorageGet(this.USER_PROFILE_KEY);
+        if (this.isContextInvalidated) return;
+
         const current = existing[this.USER_PROFILE_KEY];
 
         // Only update if we have new data or no existing data
         if (!current || profile.scrapedAt > (current.scrapedAt || 0)) {
-          await chrome.storage.local.set({ [this.USER_PROFILE_KEY]: profile });
-          console.log('[McGraw Plus] Saved user profile:', profile.name);
+          const success = await safeStorageSet({ [this.USER_PROFILE_KEY]: profile });
+          if (success && !this.isContextInvalidated) {
+            console.log('[McGraw Plus] Saved user profile:', profile.name);
+          }
         }
       } catch (error) {
+        if (error.message?.includes('Extension context invalidated')) {
+          this.handleContextInvalidated();
+          return;
+        }
         console.error('[McGraw Plus] Failed to save user profile:', error);
       }
     },
@@ -1084,13 +1247,18 @@
      * Notify popup of data update
      */
     notifyUpdate() {
+      if (this.isContextInvalidated || !isContextValid()) return;
+
       try {
         chrome.runtime.sendMessage({
           type: 'DUE_DATES_UPDATED',
           count: this.assignments.length,
         });
       } catch (e) {
-        // Popup might not be open, ignore
+        if (e.message?.includes('Extension context invalidated')) {
+          this.handleContextInvalidated();
+        }
+        // Popup might not be open, ignore other errors
       }
     },
 
@@ -1118,6 +1286,7 @@
      * Manual refresh
      */
     async refresh() {
+      if (this.isContextInvalidated) return;
       this.lastScanTime = 0;
       await this.scan();
     },
@@ -1126,11 +1295,22 @@
      * Cleanup
      */
     destroy() {
+      // Clear all intervals
+      this.intervals.forEach(id => clearInterval(id));
+      this.intervals = [];
+
+      if (this.lockHeartbeat) {
+        clearInterval(this.lockHeartbeat);
+        this.lockHeartbeat = null;
+      }
+
       if (this.observer) {
         this.observer.disconnect();
         this.observer = null;
       }
+
       this.isInitialized = false;
+      this.isContextInvalidated = true;
     },
   };
 
@@ -1139,8 +1319,10 @@
 
   // Auto-initialize when DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => AssignmentScraper.init());
+    document.addEventListener('DOMContentLoaded', () => {
+      if (isContextValid()) AssignmentScraper.init();
+    });
   } else {
-    AssignmentScraper.init();
+    if (isContextValid()) AssignmentScraper.init();
   }
 })();

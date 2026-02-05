@@ -2,149 +2,178 @@
 
 ## Overview
 
-The onboarding flow guides new users through setup, requiring version verification and terms acceptance before allowing use of the extension.
+The onboarding flow introduces new users to McGraw Plus, displaying their captured account data and explaining features. It automatically opens when a user profile is detected from McGraw-Hill Connect.
 
-## Slides
+## Automatic Trigger
 
-### Slide 0: Version Check
+Onboarding opens automatically when:
+1. User visits any McGraw-Hill Connect page
+2. API interceptor captures their profile (name + email/userId)
+3. Onboarding has not been completed yet
 
-**Purpose:** Ensure users have a supported version.
+**Lock Mechanism:** Prevents duplicate onboarding tabs via 30-second lock.
 
-**Logic:**
-1. Fetch `version.json` from GitHub
-2. Compare current version with `minVersion`
-3. Block if outdated, allow if current
+---
 
-**States:**
-- `checking` - Spinner while fetching
-- `ok` - Version is up to date
-- `outdated` - Must update to continue
-- `error` - Network error (retry 3x, then allow with warning)
+## Slides (4 Total)
 
-### Slide 1: Terms of Service
+### Slide 0: Welcome + Profile
 
-**Purpose:** Legal acknowledgment and name collection.
+**Purpose:** Greet user by name and show captured profile.
 
-**Requirements:**
-- User must enter their full name (min 2 characters)
-- Checkbox disabled until name entered
+**Displayed Data:**
+- User's full name (from API)
+- Email address
+- Account ID (truncated if long)
+- Institution/School name (if available)
+
+**Profile Card Design:**
+- Gradient header with avatar icon
+- Dark theme (#0f0f10 background)
+- Clean, minimal layout
 
 **Stored Data:**
-```javascript
+```json
 {
-  mp_terms_accepted: true,
-  mp_terms_accepted_at: 1707166800000,
-  mp_user_name: "John Smith"
+  "mp_user_profile": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "name": "Jane Doe",
+    "email": "jane.doe@example.edu",
+    "userId": "12345678",
+    "institutionId": "u123",
+    "institutionName": "Example University"
+  }
 }
 ```
 
-### Slide 2: Welcome
+**Terms Notice:**
+By clicking "Get Started", users implicitly agree to Terms of Service.
+A link allows viewing the full terms in a modal.
 
-**Purpose:** Personalized greeting and feature overview.
+---
 
-**Dynamic Content:**
-- Displays user's name from Slide 1
-- Shows key feature highlights
+### Slide 1: Data Overview
 
-### Slide 3: Login to Connect
+**Purpose:** Show all captured data from their McGraw-Hill account.
 
-**Purpose:** Verify McGraw-Hill Connect login for data sync.
+**Displayed Sections:**
 
-**Detection Methods:**
-1. Check for cached course/assignment data
-2. Query open Connect tabs
-3. Send message to content scripts
+1. **User Info Card** - Name and email with small icon
+2. **Stats Grid (4 cards):**
+   - Courses count (sections)
+   - Total assignments
+   - Completed assignments (green highlight)
+   - Pending assignments (amber highlight if overdue)
 
-**States:**
-- `checking` - Verifying login
-- `logged-in` - Connected successfully
-- `logged-out` - Needs to log in
+3. **Overdue Warning** (if any assignments past due)
+4. **Instructors Section** - List of instructors with email
+5. **Textbooks Section** - List of books by title
+6. **Connection Status Badge** - Pulse animation
 
-**Note:** Users can skip without logging in (with warning).
+**Stats Card Design:**
+- Dark background (#1a1a1a)
+- Large numbers with colored indicators
+- Success (green) for completed
+- Warning (amber) for pending/overdue
 
-### Slide 4: Feature Selection
-
-**Purpose:** Let users choose which features to enable.
-
-**UI Components:**
-- Category tabs (All, Appearance, Productivity, etc.)
-- Responsive grid of feature cards
-- Enable All / Disable All buttons
-
-**Features (16 total):**
-
-| Feature | Category | Default |
-|---------|----------|---------|
-| Dark Mode | Appearance | On |
-| Keyboard Shortcuts | Productivity | On |
-| Due Date Tracker | Organization | On |
-| Stats Tracker | Analytics | On |
-| Notifications | Organization | On |
-| Quick Copy | Productivity | Off |
-| Flashcards | Study | Off |
-| Focus Mode | Productivity | Off |
-| PDF Export | Study | Off |
-| Study Timer | Productivity | Off |
-| Progress Bar | Analytics | On |
-| Readability | Appearance | Off |
-| Tab Title | Productivity | On |
-| Auto Resume | Productivity | Off |
-| Confidence Marker | Study | Off |
-| Text Selection | Accessibility | Off |
-
-### Slide 5: Pin Extension
-
-**Purpose:** Guide users to pin the extension for easy access.
-
-**Browser Detection:**
+**Completion Calculation:**
 ```javascript
-function detectBrowser() {
-  const ua = navigator.userAgent.toLowerCase();
-
-  if (ua.includes('arc')) return 'arc';
-  if (ua.includes('vivaldi')) return 'vivaldi';
-  if (ua.includes('opera') || ua.includes('opr')) return 'opera';
-  if (ua.includes('brave')) return 'brave';
-  if (ua.includes('edg')) return 'edge';
-  if (ua.includes('chrome')) return 'chrome';
-  // ...
-}
+const isCompleted =
+  item.completed === true ||
+  item.status === 'completed' ||
+  item.status === 'COMPLETE' ||
+  item.progress === 100 ||
+  item.percentComplete === 100;
 ```
 
-**Arrow Positions:**
+---
 
-| Browser | Position |
-|---------|----------|
-| Chrome/Edge/Brave | Top-right, 120px from edge |
-| Opera | Top-right, 200px from edge |
-| Vivaldi | Top-right, 180px from edge |
-| Arc | Left sidebar, 60px from left |
+### Slide 2: Features Overview
 
-### Slide 6: Complete
+**Purpose:** Introduce key features of McGraw Plus.
 
-**Purpose:** Confirmation with personalized details.
+**Layout:** Horizontal feature cards with icons
+
+**Featured Items:**
+| Feature | Icon | Description |
+|---------|------|-------------|
+| Due Date Tracking | Calendar | Never miss a deadline with automatic tracking |
+| Dark Mode | Moon | Easy on the eyes for late-night studying |
+| Statistics | Chart | Track your study progress and streaks |
+| Notifications | Bell | Get reminded before assignments are due |
+
+**Design:**
+- Horizontal card layout (responsive grid)
+- Dark cards with subtle hover effects
+- Feature icons with accent colors
+
+**Links:**
+- Website: https://mcgrawplus.pages.dev
+- Docs: https://mcgrawplus.pages.dev/docs
+
+---
+
+### Slide 3: Complete
+
+**Purpose:** Simple completion message with close hint.
 
 **Displayed Information:**
-- User's full name
-- Completion timestamp
-- "You now have access" message
-- Link to website
+- "You're All Set!" heading
+- Brief confirmation message
+- Hint to close the page
 
-**Actions:**
-- Confetti celebration animation
-- "Get Started" navigates to Connect
+**Actions on Reaching This Slide:**
+1. Save settings to storage
+2. Mark onboarding complete
+3. Mark terms accepted
+4. Trigger confetti celebration
+
+**Note:** No back button on this slide - user should simply close the tab.
+
+**Stored Data:**
+```json
+{
+  "mp_onboarding_complete": true,
+  "mp_onboarding_completed_at": 1707166800000,
+  "mp_terms_accepted": true,
+  "mp_terms_accepted_at": 1707166800000,
+  "mp_user_name": "Jane Doe"
+}
+```
+
+---
 
 ## Navigation
 
 **Buttons:**
-- `Skip` - Complete with defaults (closes tab)
-- `Back` - Go to previous slide
-- `Next` - Proceed to next slide
+- `Back` (←) - Go to previous slide (not shown on final slide)
+- `Next` / `Continue` (→) - Proceed to next slide
+- `Get Started` - Begin onboarding (Slide 0)
+- `Finish Setup` - Complete onboarding (Slide 2)
 
 **Keyboard:**
-- `Arrow Right` / `Enter` - Next
-- `Arrow Left` - Back
-- `Escape` - Skip
+- `Escape` - Close terms modal
+
+---
+
+## Terms Modal
+
+Accessed via "Terms of Service" link on Slide 0.
+
+**Sections:**
+1. Acceptance of Terms
+2. Use of the Extension
+3. Data Privacy
+4. Disclaimer
+5. Academic Integrity
+6. Updates
+
+**Confirm Button:**
+- Disabled until user scrolls to bottom
+- Enables after scrolling to end marker
+
+---
 
 ## Confetti Animation
 
@@ -153,7 +182,7 @@ Custom canvas-based confetti on completion:
 ```javascript
 function triggerConfetti() {
   const particles = [];
-  const colors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#ec4899'];
+  const colors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6'];
 
   for (let i = 0; i < 150; i++) {
     particles.push({
@@ -162,20 +191,72 @@ function triggerConfetti() {
       vx: (Math.random() - 0.5) * 20,
       vy: (Math.random() - 0.5) * 20 - 10,
       color: colors[Math.floor(Math.random() * colors.length)],
-      // ...
+      size: Math.random() * 8 + 4,
+      rotation: Math.random() * 360,
+      rotationSpeed: (Math.random() - 0.5) * 10,
     });
   }
-  // Animation loop...
+  // Animation loop with gravity...
 }
 ```
 
+---
+
+## Connection Toast
+
+Success toast appears briefly at top of page when onboarding opens:
+- Green background
+- Checkmark icon
+- "Successfully connected!" text
+- Auto-fades after 2.5 seconds
+
+---
+
+## Progress Indicator
+
+4 animated dots at top showing current position:
+- Active: Accent color (purple) with animated bar indicator
+- Completed: Muted accent color
+- Upcoming: Gray
+
+**Animation:** Active dot expands with a bar indicator that animates width
+
+---
+
+## Storage Keys
+
+| Key | Purpose |
+|-----|---------|
+| `mp_onboarding_complete` | Whether onboarding finished |
+| `mp_onboarding_completed_at` | Timestamp of completion |
+| `mp_terms_accepted` | Whether terms accepted |
+| `mp_terms_accepted_at` | Timestamp of acceptance |
+| `mp_user_name` | User's display name |
+| `mp_onboarding_tab_id` | ID of onboarding tab (prevents duplicates) |
+| `mp_onboarding_lock` | Lock to prevent race conditions |
+
+---
+
 ## Redo Onboarding
 
-Users can redo onboarding from:
-**Settings > Data > Redo Onboarding**
+Users can redo onboarding from Dashboard settings.
 
-This removes:
+**Clears:**
 - `mp_onboarding_complete`
 - `mp_terms_accepted`
 
-And opens the onboarding page again.
+**Preserves:**
+- User profile data
+- Course/assignment data
+- Statistics
+
+---
+
+## Debugging
+
+Console logs for tracking:
+```
+[McGraw Plus] Opened onboarding for: Jane Doe
+[McGraw Plus] Onboarding lock already held
+[McGraw Plus] Could not acquire onboarding lock, skipping
+```

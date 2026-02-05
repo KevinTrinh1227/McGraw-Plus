@@ -64,6 +64,13 @@
           </svg>
           <span>Export</span>
         </button>
+        <button class="nav-item" data-tab="settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span>Settings</span>
+        </button>
         <button class="nav-item dev-only hidden" data-tab="dev">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="16 18 22 12 16 6"/>
@@ -75,9 +82,11 @@
 
       <div class="sidebar-footer">
         <span class="version">v<span id="version">2.0.0</span></span>
-        <a href="https://github.com/KevinTrinh1227/McGraw-Plus" target="_blank" class="github-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+        <a href="https://mcgrawplus.pages.dev" target="_blank" class="website-link" title="Visit Website">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
         </a>
       </div>
@@ -512,6 +521,152 @@
           </div>
         </section>
 
+        <!-- Settings Tab -->
+        <section id="tab-settings" class="tab-panel">
+          <div class="settings-grid">
+            <!-- Experimental Features Section -->
+            <div class="settings-section experimental-section">
+              <div class="section-header-inline">
+                <h3>Experimental Features</h3>
+                <span class="experimental-badge">EXPERIMENTAL</span>
+              </div>
+              <div class="experimental-warning">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span>Experimental features may be unstable and could affect your academic standing. Use at your own risk.</span>
+              </div>
+
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <span class="toggle-label">Enable Developer Mode</span>
+                  <span class="toggle-desc">Unlocks experimental features in the popup extension</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="developer-mode-toggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <!-- Quiz Solver Settings (visible when dev mode enabled) -->
+              <div id="quiz-solver-settings" class="hidden">
+                <h4>Quiz Solver Settings</h4>
+                <p class="settings-note">Configure AI-powered quiz solving. Requires an API key from your chosen provider.</p>
+
+                <div class="form-group">
+                  <label for="quiz-solver-provider">LLM Provider</label>
+                  <select id="quiz-solver-provider" class="select-input">
+                    <option value="groq">Groq (Free)</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="quiz-solver-api-key">API Key</label>
+                  <input type="password" id="quiz-solver-api-key" class="input" placeholder="Enter your API key..." />
+                </div>
+
+                <div class="form-group">
+                  <label for="quiz-solver-model">Model</label>
+                  <select id="quiz-solver-model" class="select-input">
+                    <option value="auto">Auto (Recommended)</option>
+                    <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Groq)</option>
+                    <option value="gpt-4o-mini">GPT-4o Mini (OpenAI)</option>
+                    <option value="claude-3-haiku-20240307">Claude 3 Haiku (Anthropic)</option>
+                  </select>
+                </div>
+
+                <div class="form-actions">
+                  <button id="save-quiz-solver-btn" class="btn primary">Save Settings</button>
+                  <button id="test-quiz-solver-btn" class="btn outline">Test Connection</button>
+                </div>
+
+                <div id="quiz-solver-status" class="connection-status hidden">
+                  <span class="status-icon"></span>
+                  <span class="status-text"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Data Management Section -->
+            <div class="settings-section">
+              <h3>Data Management</h3>
+              <p class="settings-note">Manage your stored data and preferences.</p>
+
+              <div class="data-actions">
+                <button id="clear-stats-btn" class="btn outline">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                  </svg>
+                  Clear Statistics
+                </button>
+                <button id="clear-flashcards-btn" class="btn outline">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="6" width="20" height="12" rx="2"/>
+                    <path d="M12 12h.01"/>
+                  </svg>
+                  Clear Flashcards
+                </button>
+                <button id="clear-response-cache-btn" class="btn outline">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                  Clear Response Cache
+                </button>
+              </div>
+
+              <div class="danger-zone">
+                <h4>Danger Zone</h4>
+                <button id="reset-all-btn" class="btn danger">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                  Reset All Data
+                </button>
+                <p class="danger-note">This will delete all your data and reset the extension to default settings.</p>
+              </div>
+            </div>
+
+            <!-- About Section -->
+            <div class="settings-section">
+              <h3>About McGraw Plus</h3>
+              <div class="about-info">
+                <div class="about-row">
+                  <span>Version</span>
+                  <span id="settings-version">2.3.0</span>
+                </div>
+                <div class="about-row">
+                  <span>Website</span>
+                  <a href="https://mcgrawplus.pages.dev" target="_blank">mcgrawplus.pages.dev</a>
+                </div>
+                <div class="about-row">
+                  <span>Documentation</span>
+                  <a href="https://mcgrawplus.pages.dev/docs" target="_blank">View Docs</a>
+                </div>
+                <div class="about-row">
+                  <span>Privacy</span>
+                  <a href="https://mcgrawplus.pages.dev/privacy" target="_blank">Privacy Policy</a>
+                </div>
+              </div>
+              <div class="privacy-info">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span>Your data stays on your device. No telemetry, no tracking.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- Dev Mode Section (hidden by default) -->
         <section id="tab-dev" class="tab-panel dev-only hidden">
           <div class="dev-section">
@@ -548,9 +703,9 @@
       <footer class="dashboard-footer">
         <span>McGraw Plus v<span id="footer-version">2.0.0</span></span>
         <span class="footer-divider">•</span>
-        <a href="https://github.com/KevinTrinh1227/McGraw-Plus" target="_blank">GitHub</a>
+        <a href="https://mcgrawplus.pages.dev" target="_blank">Website</a>
         <span class="footer-divider">•</span>
-        <a href="https://github.com/KevinTrinh1227/McGraw-Plus/issues" target="_blank">Report Issue</a>
+        <a href="https://mcgrawplus.pages.dev/contact" target="_blank">Contact</a>
       </footer>
     </main>
   </div>

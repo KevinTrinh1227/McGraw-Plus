@@ -268,6 +268,7 @@
       stats: 'Statistics',
       flashcards: 'Flashcards',
       export: 'Export',
+      settings: 'Settings',
       dev: 'Developer Tools',
     };
     $('page-title').textContent = titles[tab] || 'Dashboard';
@@ -281,6 +282,8 @@
       statsComponent.render();
     } else if (tab === 'flashcards' && flashcardsComponent) {
       flashcardsComponent.render();
+    } else if (tab === 'settings') {
+      loadSettingsTab();
     } else if (tab === 'dev' && isDevMode) {
       refreshStorageInspector();
     }
@@ -831,6 +834,229 @@
         tags: ['biology', 'plants'],
       },
     ];
+  }
+
+  /**
+   * Load settings tab
+   */
+  async function loadSettingsTab() {
+    // Load developer mode state
+    const result = await chrome.storage.local.get([
+      'mp_developer_mode_enabled',
+      'mp_quiz_solver_provider',
+      'mp_quiz_solver_api_key',
+      'mp_quiz_solver_model',
+    ]);
+
+    const devModeToggle = $('developer-mode-toggle');
+    const quizSolverSettings = $('quiz-solver-settings');
+
+    if (devModeToggle) {
+      devModeToggle.checked = result.mp_developer_mode_enabled === true;
+    }
+
+    // Show/hide quiz solver settings based on dev mode
+    if (quizSolverSettings) {
+      quizSolverSettings.classList.toggle('hidden', !result.mp_developer_mode_enabled);
+    }
+
+    // Load quiz solver settings
+    const providerSelect = $('quiz-solver-provider');
+    const apiKeyInput = $('quiz-solver-api-key');
+    const modelSelect = $('quiz-solver-model');
+
+    if (providerSelect && result.mp_quiz_solver_provider) {
+      providerSelect.value = result.mp_quiz_solver_provider;
+    }
+    if (apiKeyInput && result.mp_quiz_solver_api_key) {
+      apiKeyInput.value = result.mp_quiz_solver_api_key;
+    }
+    if (modelSelect && result.mp_quiz_solver_model) {
+      modelSelect.value = result.mp_quiz_solver_model;
+    }
+
+    // Show version
+    const settingsVersion = $('settings-version');
+    if (settingsVersion) {
+      settingsVersion.textContent = chrome.runtime.getManifest().version;
+    }
+
+    // Setup settings event listeners if not already done
+    setupSettingsListeners();
+  }
+
+  /**
+   * Setup settings event listeners
+   */
+  let settingsListenersSetup = false;
+  function setupSettingsListeners() {
+    if (settingsListenersSetup) return;
+    settingsListenersSetup = true;
+
+    // Developer mode toggle
+    const devModeToggle = $('developer-mode-toggle');
+    if (devModeToggle) {
+      devModeToggle.addEventListener('change', async (e) => {
+        const enabled = e.target.checked;
+        await chrome.storage.local.set({ mp_developer_mode_enabled: enabled });
+
+        // Show/hide quiz solver settings
+        const quizSolverSettings = $('quiz-solver-settings');
+        if (quizSolverSettings) {
+          quizSolverSettings.classList.toggle('hidden', !enabled);
+        }
+
+        showToast(enabled ? 'Developer mode enabled' : 'Developer mode disabled');
+      });
+    }
+
+    // Save quiz solver settings
+    const saveQuizSolverBtn = $('save-quiz-solver-btn');
+    if (saveQuizSolverBtn) {
+      saveQuizSolverBtn.addEventListener('click', async () => {
+        const provider = $('quiz-solver-provider')?.value || 'groq';
+        const apiKey = $('quiz-solver-api-key')?.value || '';
+        const model = $('quiz-solver-model')?.value || 'auto';
+
+        await chrome.storage.local.set({
+          mp_quiz_solver_provider: provider,
+          mp_quiz_solver_api_key: apiKey,
+          mp_quiz_solver_model: model,
+        });
+
+        showToast('Quiz solver settings saved');
+      });
+    }
+
+    // Test quiz solver connection
+    const testQuizSolverBtn = $('test-quiz-solver-btn');
+    if (testQuizSolverBtn) {
+      testQuizSolverBtn.addEventListener('click', async () => {
+        const statusEl = $('quiz-solver-status');
+        const apiKey = $('quiz-solver-api-key')?.value || '';
+        const provider = $('quiz-solver-provider')?.value || 'groq';
+
+        if (!apiKey) {
+          if (statusEl) {
+            statusEl.classList.remove('hidden', 'success');
+            statusEl.classList.add('error');
+            statusEl.querySelector('.status-text').textContent = 'Please enter an API key first';
+          }
+          return;
+        }
+
+        // Show testing status
+        if (statusEl) {
+          statusEl.classList.remove('hidden', 'success', 'error');
+          statusEl.querySelector('.status-text').textContent = 'Testing connection...';
+        }
+
+        try {
+          // Simple API test based on provider
+          let testUrl, testHeaders, testBody;
+
+          if (provider === 'groq') {
+            testUrl = 'https://api.groq.com/openai/v1/models';
+            testHeaders = { 'Authorization': `Bearer ${apiKey}` };
+          } else if (provider === 'openai') {
+            testUrl = 'https://api.openai.com/v1/models';
+            testHeaders = { 'Authorization': `Bearer ${apiKey}` };
+          } else if (provider === 'anthropic') {
+            testUrl = 'https://api.anthropic.com/v1/messages';
+            testHeaders = {
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'Content-Type': 'application/json',
+            };
+            testBody = JSON.stringify({
+              model: 'claude-3-haiku-20240307',
+              max_tokens: 1,
+              messages: [{ role: 'user', content: 'test' }],
+            });
+          }
+
+          const response = await fetch(testUrl, {
+            method: testBody ? 'POST' : 'GET',
+            headers: testHeaders,
+            body: testBody,
+          });
+
+          if (statusEl) {
+            if (response.ok || response.status === 401) {
+              // 401 means API is reachable but key might be invalid - still show error
+              if (response.status === 401) {
+                statusEl.classList.remove('success');
+                statusEl.classList.add('error');
+                statusEl.querySelector('.status-text').textContent = 'Invalid API key';
+              } else {
+                statusEl.classList.remove('error');
+                statusEl.classList.add('success');
+                statusEl.querySelector('.status-text').textContent = 'Connection successful!';
+              }
+            } else {
+              statusEl.classList.remove('success');
+              statusEl.classList.add('error');
+              statusEl.querySelector('.status-text').textContent = `Connection failed: ${response.status}`;
+            }
+          }
+        } catch (err) {
+          if (statusEl) {
+            statusEl.classList.remove('success');
+            statusEl.classList.add('error');
+            statusEl.querySelector('.status-text').textContent = `Error: ${err.message}`;
+          }
+        }
+      });
+    }
+
+    // Clear stats
+    const clearStatsBtn = $('clear-stats-btn');
+    if (clearStatsBtn) {
+      clearStatsBtn.addEventListener('click', async () => {
+        if (confirm('Are you sure you want to clear all statistics? This cannot be undone.')) {
+          await chrome.storage.local.remove(['mp_stats']);
+          showToast('Statistics cleared');
+        }
+      });
+    }
+
+    // Clear flashcards
+    const clearFlashcardsBtn = $('clear-flashcards-btn');
+    if (clearFlashcardsBtn) {
+      clearFlashcardsBtn.addEventListener('click', async () => {
+        if (confirm('Are you sure you want to clear all flashcards? This cannot be undone.')) {
+          await chrome.storage.local.remove(['mp_flashcards']);
+          showToast('Flashcards cleared');
+        }
+      });
+    }
+
+    // Clear response cache
+    const clearCacheBtn = $('clear-response-cache-btn');
+    if (clearCacheBtn) {
+      clearCacheBtn.addEventListener('click', async () => {
+        if (confirm('Are you sure you want to clear the response cache? This may affect solver accuracy until rebuilt.')) {
+          await chrome.storage.local.remove(['responseMap']);
+          showToast('Response cache cleared');
+        }
+      });
+    }
+
+    // Reset all data
+    const resetAllBtn = $('reset-all-btn');
+    if (resetAllBtn) {
+      resetAllBtn.addEventListener('click', async () => {
+        if (confirm('Are you absolutely sure? This will delete ALL data and reset the extension to default settings. This action cannot be undone.')) {
+          if (confirm('This is your final warning. ALL DATA WILL BE LOST. Continue?')) {
+            await chrome.storage.local.clear();
+            showToast('All data has been reset');
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          }
+        }
+      });
+    }
   }
 
   // Initialize on DOM ready

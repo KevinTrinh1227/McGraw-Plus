@@ -18,7 +18,12 @@ const Storage = {
     FLASHCARDS: 'mp_flashcards',
     DUE_DATES: 'mp_due_dates',
     COURSES: 'mp_courses',
+    SECTIONS: 'mp_sections',
+    INSTRUCTORS: 'mp_instructors',
+    BOOKS: 'mp_books',
     USER_PROFILE: 'mp_user_profile',
+    USER_NAME: 'mp_user_name',
+    CAPTURE_STATE: 'mp_capture_state',
 
     // Solver-specific (migrated from old)
     RESPONSE_MAP: 'responseMap',
@@ -30,12 +35,26 @@ const Storage = {
     // Onboarding
     ONBOARDING_COMPLETE: 'mp_onboarding_complete',
     FIRST_INSTALL: 'mp_first_install',
+    ONBOARDING_WAITING_FOR_CONNECT: 'mp_onboarding_waiting_for_connect',
+    USER_NAME_VERIFIED: 'mp_user_name_verified',
+    ONBOARDING_TAB_ID: 'mp_onboarding_tab_id',
+    ONBOARDING_LOCK: 'mp_onboarding_lock',
+    DASHBOARD_TAB_ID: 'mp_dashboard_tab_id',
 
     // Timestamps for audit trail
     ONBOARDING_COMPLETED_AT: 'mp_onboarding_completed_at',
     SOLVER_TERMS_AGREED_AT: 'mp_solver_terms_agreed_at',
     SOLVER_ENABLED_AT: 'mp_solver_enabled_at',
     PIN_PROMPT_SHOWN_AT: 'mp_pin_prompt_shown_at',
+
+    // Experimental / Developer Mode
+    DEVELOPER_MODE_ENABLED: 'mp_developer_mode_enabled',
+    SOLVER_TERMS_AGREED: 'mp_solver_terms_agreed',
+
+    // Quiz Solver (AI)
+    QUIZ_SOLVER_ENABLED: 'mp_quiz_solver_enabled',
+    QUIZ_SOLVER_PROVIDER: 'mp_quiz_solver_provider',
+    QUIZ_SOLVER_API_KEY: 'mp_quiz_solver_api_key',
 
     // Updates
     UPDATE_AVAILABLE: 'mp_update_available',
@@ -53,23 +72,23 @@ const Storage = {
   // Default settings
   DEFAULTS: {
     settings: {
-      darkMode: true,
-      keyboardShortcuts: true,
+      darkMode: false,
+      keyboardShortcuts: false,
       dueDateTracker: true,
-      statsTracker: true,
+      statsTracker: false,
       notifications: true,
-      quickCopy: false,
+      quickCopy: true,
       flashcardGenerator: false,
       focusMode: false,
       pdfExport: false,
-      studyTimer: false,
-      progressBar: true,
+      studyTimer: true,
+      progressBar: false,
       readability: false,
-      tabTitle: true,
+      tabTitle: false,
       autoResume: false,
       confidenceMarker: false,
       antiCopy: false,
-      // Solver settings (hidden)
+      // Solver settings (hidden/experimental)
       solverEnabled: false,
     },
     stats: {

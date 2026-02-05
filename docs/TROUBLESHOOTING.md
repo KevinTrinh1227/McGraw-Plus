@@ -77,28 +77,65 @@
 
 ---
 
+### Profile Not Being Captured
+
+**Symptoms:**
+- Onboarding never opens
+- "Connect to Continue" message persists
+- No user name shown
+
+**Solutions:**
+
+1. **Visit Connect Dashboard**
+   - Go to `connect.mheducation.com` or `newconnect.mheducation.com`
+   - Navigate to your courses or assignments
+   - The API interceptor needs to capture API responses
+
+2. **Enable Debug Mode**
+   - Open console: `F12` > Console tab
+   - Run: `window.__MCGRAW_PLUS_DEBUG = true`
+   - Refresh the page
+   - Check for `[McGraw Plus]` messages
+
+3. **Check Captured Data**
+   - In console: `window.__mcgrawPlusCaptures`
+   - Look for `profiles` and `courses` arrays
+   - Should have data if API calls succeeded
+
+4. **Wait for API Calls**
+   - The extension intercepts API responses
+   - Navigate around Connect to trigger API calls
+   - Check ToDo, Calendar, or Results pages
+
+5. **Check for Errors**
+   - Look for red errors in console
+   - Report on GitHub if persistent
+
+---
+
 ### Due Dates Not Showing
 
 **Solutions:**
 
 1. **Visit Connect Dashboard**
-   - Go to `connect.mheducation.com`
-   - The scraper needs to run on Connect pages
+   - Go to `connect.mheducation.com` or `newconnect.mheducation.com`
+   - The API interceptor needs to capture `/studentAssignments` endpoint
 
 2. **Check Login**
    - Ensure you're logged in to Connect
-   - Scraper can't access data without login
+   - Extension can't access data without login
 
 3. **Wait for Sync**
    - Data syncs automatically in background
-   - May take a few seconds
+   - May take a few seconds after page load
 
-4. **Manual Resync**
-   - Settings > Data > Re-sync Data
+4. **Navigate to Assignments**
+   - Go to ToDo or Calendar page
+   - This triggers the studentAssignments API call
 
-5. **Check Storage**
-   - Settings > Data tab
-   - Verify Q&A pairs count isn't 0
+5. **Check Debug Data**
+   - Run: `window.__mcgrawPlusCaptures.assignments`
+   - Should show captured assignment data
 
 ---
 
@@ -218,7 +255,62 @@
 
 ---
 
+### Extension Context Invalidated Error
+
+**Symptoms:**
+- Console shows "Extension context invalidated"
+- Features stop working after extension update/reload
+- Chrome storage errors
+
+**This is normal behavior** when:
+- You reload the extension in `chrome://extensions`
+- The extension auto-updates
+- Developer mode reloads
+
+**Solutions:**
+
+1. **Refresh the Page**
+   - Simply refresh the McGraw-Hill page
+   - Content scripts will reinitialize
+
+2. **This is Expected**
+   - The extension handles this gracefully
+   - Old tabs will stop working until refreshed
+   - No data is lost
+
+3. **If Persistent**
+   - Restart Chrome
+   - Disable/enable the extension
+
+---
+
 ## Debugging
+
+### Enable Debug Mode
+
+Run this in the browser console on any McGraw-Hill page:
+
+```javascript
+window.__MCGRAW_PLUS_DEBUG = true
+```
+
+This enables verbose logging for the API interceptor.
+
+### View Captured Data
+
+```javascript
+window.__mcgrawPlusCaptures
+```
+
+Shows all data captured by the API interceptor:
+- `endpoints` - All intercepted URLs
+- `profiles` - User profile captures
+- `courses` - Course data
+- `sections` - Section data
+- `assignments` - Assignment data
+- `instructors` - Instructor data
+- `books` - Book/textbook data
+- `rawResponses` - Raw API responses (debug mode only)
 
 ### Enable Developer Console
 
@@ -230,14 +322,19 @@
 ### Common Console Messages
 
 ```
-[McGraw Plus] Assignment scraper initializing...
+[McGraw Plus] API interceptor v4.0 initialized
 ```
-Normal - scraper is starting
+Normal - API interceptor is ready
 
 ```
-[McGraw Plus] Loaded 3 courses, 12 assignments from cache
+[McGraw Plus] Processed studentAssignments: {courses: 2, sections: 3, ...}
 ```
-Normal - data loaded
+Normal - data captured from main endpoint
+
+```
+[McGraw Plus] Data capture complete: {hasProfile: true, ...}
+```
+Normal - sufficient data captured for onboarding
 
 ```
 [McGraw Plus] Another tab is scraping, skipping initialization
@@ -245,9 +342,9 @@ Normal - data loaded
 Normal - multi-tab coordination working
 
 ```
-[McGraw Plus] Lock acquisition error: ...
+[McGraw Plus] Extension context invalidated, cleaning up...
 ```
-Warning - storage issue, but will proceed
+Normal - extension was reloaded, refresh the page
 
 ### Storage Debugging
 
@@ -255,6 +352,13 @@ Warning - storage issue, but will proceed
 2. Click "Details" on McGraw Plus
 3. Click "Inspect" on any view
 4. Go to Application > Storage > Local Storage
+
+Key storage entries:
+- `mp_user_profile` - User data
+- `mp_courses` - Courses
+- `mp_sections` - Sections with instructor info
+- `mp_due_dates` - Assignments
+- `mp_capture_state` - Capture status
 
 ### Reset Everything
 

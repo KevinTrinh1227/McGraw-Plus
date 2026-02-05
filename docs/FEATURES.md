@@ -1,5 +1,27 @@
 # Features Guide
 
+## Data Capture
+
+McGraw Plus automatically captures your account data when you visit McGraw-Hill Connect:
+
+| Data | Storage Key | Description |
+|------|-------------|-------------|
+| User Profile | `mp_user_profile` | Name, email, student ID, institution |
+| Courses | `mp_courses` | Course names, disciplines, timezones |
+| Sections | `mp_sections` | Section info with instructor details |
+| Assignments | `mp_due_dates` | All assignments with status and scores |
+| Instructors | `mp_instructors` | Instructor names and emails |
+| Textbooks | `mp_books` | Book titles, ISBNs, authors |
+
+**How it works:**
+- API interceptor captures responses from McGraw-Hill's own API calls
+- No extra network requests are made
+- All data stored locally in your browser
+
+See [Data Capture Guide](SCRAPING.md) for technical details.
+
+---
+
 ## Appearance
 
 ### Dark Mode

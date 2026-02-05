@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "2.5.0",
   "name": "McGraw Plus",
   "tagline": "A study companion for McGraw-Hill SmartBook",
 
@@ -8,14 +8,14 @@
       "id": "darkMode",
       "name": "Dark Mode",
       "description": "Comfortable dark theme for late-night studying",
-      "default": true,
+      "default": false,
       "category": "appearance"
     },
     "keyboardShortcuts": {
       "id": "keyboardShortcuts",
       "name": "Keyboard Shortcuts",
       "description": "Use 1-4 or A-D to select answers, Enter to submit",
-      "default": true,
+      "default": false,
       "category": "productivity"
     },
     "dueDateTracker": {
@@ -29,7 +29,7 @@
       "id": "statsTracker",
       "name": "Stats Tracker",
       "description": "Track your study progress and streaks",
-      "default": true,
+      "default": false,
       "category": "analytics"
     },
     "notifications": {
@@ -43,7 +43,7 @@
       "id": "quickCopy",
       "name": "Quick Copy",
       "description": "Copy questions with one click for external research",
-      "default": false,
+      "default": true,
       "category": "productivity"
     },
     "flashcardGenerator": {
@@ -71,14 +71,14 @@
       "id": "studyTimer",
       "name": "Study Timer",
       "description": "Pomodoro timer for productive study sessions",
-      "default": false,
+      "default": true,
       "category": "productivity"
     },
     "progressBar": {
       "id": "progressBar",
       "name": "Progress Bar",
       "description": "Visual indicator of assignment completion",
-      "default": true,
+      "default": false,
       "category": "analytics"
     },
     "readability": {
@@ -92,7 +92,7 @@
       "id": "tabTitle",
       "name": "Smart Tab Title",
       "description": "Show assignment progress in browser tab",
-      "default": true,
+      "default": false,
       "category": "productivity"
     },
     "autoResume": {
@@ -173,8 +173,28 @@
   },
 
   "urls": {
-    "github": "https://github.com/KevinTrinh1227/McGraw-Plus",
-    "releases": "https://github.com/KevinTrinh1227/McGraw-Plus/releases",
-    "issues": "https://github.com/KevinTrinh1227/McGraw-Plus/issues"
+    "website": "https://mcgrawplus.pages.dev",
+    "docs": "https://mcgrawplus.pages.dev/docs",
+    "privacy": "https://mcgrawplus.pages.dev/privacy",
+    "contact": "https://mcgrawplus.pages.dev/contact"
+  },
+
+  "storageKeys": {
+    "userProfile": "mp_user_profile",
+    "courses": "mp_courses",
+    "sections": "mp_sections",
+    "dueDates": "mp_due_dates",
+    "instructors": "mp_instructors",
+    "books": "mp_books",
+    "settings": "mp_settings",
+    "stats": "mp_stats",
+    "onboardingComplete": "mp_onboarding_complete",
+    "onboardingCompletedAt": "mp_onboarding_completed_at",
+    "termsAccepted": "mp_terms_accepted",
+    "userName": "mp_user_name",
+    "captureState": "mp_capture_state",
+    "onboardingLock": "mp_onboarding_lock",
+    "onboardingTabId": "mp_onboarding_tab_id",
+    "dashboardTabId": "mp_dashboard_tab_id"
   }
 }

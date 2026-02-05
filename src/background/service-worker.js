@@ -8,148 +8,269 @@ const STORAGE_KEYS = {
   SETTINGS: 'mp_settings',
   STATS: 'mp_stats',
   DUE_DATES: 'mp_due_dates',
-  UPDATE_AVAILABLE: 'mp_update_available',
-  UPDATE_VERSION: 'mp_update_version',
-  UPDATE_URL: 'mp_update_url',
   FIRST_INSTALL: 'mp_first_install',
   ONBOARDING_COMPLETE: 'mp_onboarding_complete',
   SOLVER_ENABLED: 'isBotEnabled', // Legacy key for compatibility
-  BLOCK_DATA: 'mp_block_data',
-  LAST_BLOCK_CHECK: 'mp_last_block_check',
+  DASHBOARD_TAB_ID: 'mp_dashboard_tab_id',
+  USER_PROFILE: 'mp_user_profile',
+  COURSES: 'mp_courses',
+  SECTIONS: 'mp_sections',
+  INSTRUCTORS: 'mp_instructors',
+  BOOKS: 'mp_books',
+  ONBOARDING_TAB_ID: 'mp_onboarding_tab_id',
+  ONBOARDING_LOCK: 'mp_onboarding_lock',
 };
-
-// GitHub repo info
-const REPO_OWNER = 'KevinTrinh1227';
-const REPO_NAME = 'McGraw-Plus';
-const GITHUB_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`;
-
-// Version control JSON URL (for kill switch and force update)
-const VERSION_JSON_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/version.json`;
 
 // Message types
 const MSG = {
   SOLVER_ACTIVATE: 'SOLVER_ACTIVATE',
   SOLVER_DEACTIVATE: 'SOLVER_DEACTIVATE',
   SETTINGS_CHANGED: 'SETTINGS_CHANGED',
-  CHECK_UPDATE: 'CHECK_UPDATE',
   SHOW_NOTIFICATION: 'SHOW_NOTIFICATION',
+  DATA_AVAILABLE: 'DATA_AVAILABLE',
   PING: 'PING',
 };
 
+// McGraw-Hill domains
+const MCGRAW_HILL_DOMAINS = [
+  'learning.mheducation.com',
+  'connect.mheducation.com',
+  'newconnect.mheducation.com',
+  'connect.edu.mheducation.com',
+  'connect.router.integration.prod.mheducation.com',
+];
+
 /**
- * Compare semantic versions
+ * Check if URL is a McGraw-Hill domain
  */
-function compareSemver(a, b) {
-  const pa = a.replace(/^v/, '').split('.').map(Number);
-  const pb = b.replace(/^v/, '').split('.').map(Number);
-  for (let i = 0; i < 3; i++) {
-    const na = pa[i] || 0;
-    const nb = pb[i] || 0;
-    if (na > nb) return 1;
-    if (na < nb) return -1;
-  }
-  return 0;
+function isMcGrawHillUrl(url) {
+  if (!url) return false;
+  return MCGRAW_HILL_DOMAINS.some(domain => url.includes(domain));
 }
 
 /**
- * Check kill switch and force update status
- * This runs periodically and blocks the extension if needed
+ * Open or focus the dashboard tab
+ * Reuses existing tab if available, otherwise opens new one
  */
-async function checkBlockStatus() {
+async function openOrFocusDashboard() {
   try {
-    const response = await fetch(VERSION_JSON_URL, {
-      signal: AbortSignal.timeout(5000),
-      cache: 'no-store',
-    });
+    const result = await chrome.storage.local.get(STORAGE_KEYS.DASHBOARD_TAB_ID);
+    const existingTabId = result[STORAGE_KEYS.DASHBOARD_TAB_ID];
 
-    if (!response.ok) return;
-
-    const data = await response.json();
-    const currentVersion = chrome.runtime.getManifest().version;
-
-    const blockData = {
-      killSwitch: data.killSwitch === true,
-      forceUpdate: data.forceUpdate === true,
-      minVersion: data.minVersion || '0.0.0',
-      latestVersion: data.version || currentVersion,
-      message: data.message || '',
-      downloadUrl: data.downloadUrl || `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest`,
-    };
-
-    // Check if current version is below minimum required
-    if (compareSemver(currentVersion, blockData.minVersion) < 0) {
-      blockData.forceUpdate = true;
-    }
-
-    // Store block data
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.BLOCK_DATA]: blockData,
-      [STORAGE_KEYS.LAST_BLOCK_CHECK]: Date.now(),
-    });
-
-    // If blocked, disable the solver and show badge
-    if (blockData.killSwitch || blockData.forceUpdate) {
-      await chrome.storage.local.set({ [STORAGE_KEYS.SOLVER_ENABLED]: false });
-      chrome.action.setBadgeText({ text: '!' });
-      chrome.action.setBadgeBackgroundColor({ color: '#ef4444' });
-      console.log('[McGraw Plus] Extension blocked:', blockData.killSwitch ? 'Kill switch' : 'Force update');
-    }
-  } catch (err) {
-    console.warn('[McGraw Plus] Failed to check block status:', err.message);
-  }
-}
-
-/**
- * Check for updates
- */
-async function checkForUpdate() {
-  try {
-    const response = await fetch(GITHUB_API_URL, {
-      headers: { Accept: 'application/vnd.github.v3+json' },
-      signal: AbortSignal.timeout(5000),
-    });
-
-    if (!response.ok) {
-      console.warn('[McGraw Plus] GitHub API returned', response.status);
-      return;
-    }
-
-    const release = await response.json();
-    const latestVersion = release.tag_name;
-    const currentVersion = chrome.runtime.getManifest().version;
-
-    // Find the ZIP asset URL for direct download
-    let downloadUrl = release.html_url;
-    if (release.assets && release.assets.length > 0) {
-      const zipAsset = release.assets.find(
-        (asset) => asset.name.endsWith('.zip') && asset.browser_download_url
-      );
-      if (zipAsset) {
-        downloadUrl = zipAsset.browser_download_url;
+    // Try to focus existing tab
+    if (existingTabId) {
+      try {
+        const tab = await chrome.tabs.get(existingTabId);
+        if (tab && tab.url && tab.url.includes('dashboard.html')) {
+          await chrome.tabs.update(existingTabId, { active: true });
+          await chrome.windows.update(tab.windowId, { focused: true });
+          return;
+        }
+      } catch (err) {
+        // Tab doesn't exist anymore
       }
     }
 
-    if (compareSemver(latestVersion, currentVersion) > 0) {
-      console.log(`[McGraw Plus] New version available: ${latestVersion} (current: ${currentVersion})`);
+    // Create new dashboard tab
+    const dashboardUrl = chrome.runtime.getURL('dashboard/dashboard.html');
+    const newTab = await chrome.tabs.create({ url: dashboardUrl });
 
-      await chrome.storage.local.set({
-        [STORAGE_KEYS.UPDATE_AVAILABLE]: true,
-        [STORAGE_KEYS.UPDATE_VERSION]: latestVersion.replace(/^v/, ''),
-        [STORAGE_KEYS.UPDATE_URL]: downloadUrl,
-      });
-
-      // Show badge
-      chrome.action.setBadgeText({ text: '!' });
-      chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
-    } else {
-      console.log('[McGraw Plus] Already on latest version:', currentVersion);
-      await chrome.storage.local.set({ [STORAGE_KEYS.UPDATE_AVAILABLE]: false });
-      chrome.action.setBadgeText({ text: '' });
-    }
+    // Store the tab ID
+    await chrome.storage.local.set({ [STORAGE_KEYS.DASHBOARD_TAB_ID]: newTab.id });
   } catch (err) {
-    console.warn('[McGraw Plus] Failed to check for updates:', err.message);
+    console.warn('[McGraw Plus] Failed to open dashboard:', err.message);
   }
 }
+
+/**
+ * Acquire onboarding lock to prevent duplicate tabs
+ * Returns true if lock acquired, false if already locked
+ */
+async function acquireOnboardingLock() {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.ONBOARDING_LOCK);
+  const lock = result[STORAGE_KEYS.ONBOARDING_LOCK];
+
+  // Check if lock exists and is still valid (expires after 30 seconds)
+  if (lock && lock.timestamp && (Date.now() - lock.timestamp < 30000)) {
+    console.log('[McGraw Plus] Onboarding lock already held');
+    return false;
+  }
+
+  // Acquire lock
+  await chrome.storage.local.set({
+    [STORAGE_KEYS.ONBOARDING_LOCK]: {
+      timestamp: Date.now(),
+      holder: 'service-worker',
+    },
+  });
+
+  return true;
+}
+
+/**
+ * Release onboarding lock
+ */
+async function releaseOnboardingLock() {
+  await chrome.storage.local.remove(STORAGE_KEYS.ONBOARDING_LOCK);
+}
+
+/**
+ * Open onboarding page when user profile AND actual data is captured
+ * Only opens if:
+ * - Onboarding not yet complete
+ * - We have complete profile data (name + email/userId)
+ * - We have at least SOME course or assignment data
+ * Uses lock mechanism to prevent duplicate tabs
+ */
+async function openOnboardingWithProfile() {
+  try {
+    // Check if we can acquire lock
+    const lockAcquired = await acquireOnboardingLock();
+    if (!lockAcquired) {
+      console.log('[McGraw Plus] Could not acquire onboarding lock, skipping');
+      return false;
+    }
+
+    const result = await chrome.storage.local.get([
+      STORAGE_KEYS.ONBOARDING_COMPLETE,
+      STORAGE_KEYS.USER_PROFILE,
+      STORAGE_KEYS.ONBOARDING_TAB_ID,
+      STORAGE_KEYS.COURSES,
+      STORAGE_KEYS.SECTIONS,
+      STORAGE_KEYS.DUE_DATES,
+    ]);
+
+    // Don't open if onboarding already complete
+    if (result[STORAGE_KEYS.ONBOARDING_COMPLETE]) {
+      await releaseOnboardingLock();
+      return false;
+    }
+
+    // Check for COMPLETE profile data (name + email or userId)
+    const profile = result[STORAGE_KEYS.USER_PROFILE];
+    if (!profile) {
+      await releaseOnboardingLock();
+      return false;
+    }
+
+    // Must have a valid name (not empty, not "User")
+    const hasValidName = profile.name && profile.name !== 'User' && profile.name.trim().length > 0;
+    // Must have either email or userId
+    const hasIdentifier = (profile.email && profile.email.includes('@')) ||
+                          (profile.userId && String(profile.userId).length > 0);
+
+    if (!hasValidName || !hasIdentifier) {
+      console.log('[McGraw Plus] Waiting for complete profile data. Have:', {
+        name: !!hasValidName,
+        identifier: !!hasIdentifier,
+      });
+      await releaseOnboardingLock();
+      return false;
+    }
+
+    // IMPORTANT: Must have at least SOME actual data (courses OR sections OR assignments)
+    // Don't open onboarding if we only have a profile but no courses/sections/assignments
+    const courses = result[STORAGE_KEYS.COURSES] || [];
+    const sections = result[STORAGE_KEYS.SECTIONS] || [];
+    const assignments = result[STORAGE_KEYS.DUE_DATES] || [];
+    const hasActualData = courses.length > 0 || sections.length > 0 || assignments.length > 0;
+
+    if (!hasActualData) {
+      console.log('[McGraw Plus] Waiting for course/section/assignment data. Have:', {
+        courses: courses.length,
+        sections: sections.length,
+        assignments: assignments.length,
+      });
+      await releaseOnboardingLock();
+      return false;
+    }
+
+    // Check if onboarding tab already exists
+    const existingTabId = result[STORAGE_KEYS.ONBOARDING_TAB_ID];
+    if (existingTabId) {
+      try {
+        const tab = await chrome.tabs.get(existingTabId);
+        if (tab && tab.url && tab.url.includes('onboarding.html')) {
+          // Tab exists, just focus it
+          await chrome.tabs.update(existingTabId, { active: true });
+          await chrome.windows.update(tab.windowId, { focused: true });
+          // Reload to show new data
+          await chrome.tabs.reload(existingTabId);
+          console.log('[McGraw Plus] Focused existing onboarding tab');
+          await releaseOnboardingLock();
+          return true;
+        }
+      } catch (err) {
+        // Tab doesn't exist anymore, clear the stored ID
+        await chrome.storage.local.remove(STORAGE_KEYS.ONBOARDING_TAB_ID);
+      }
+    }
+
+    // Create new onboarding tab
+    const onboardingUrl = chrome.runtime.getURL('onboarding/onboarding.html');
+    const newTab = await chrome.tabs.create({ url: onboardingUrl });
+
+    // Store the tab ID
+    await chrome.storage.local.set({ [STORAGE_KEYS.ONBOARDING_TAB_ID]: newTab.id });
+
+    console.log('[McGraw Plus] Opened onboarding for:', profile.name);
+    await releaseOnboardingLock();
+    return true;
+  } catch (err) {
+    console.warn('[McGraw Plus] Failed to open onboarding:', err.message);
+    await releaseOnboardingLock();
+    return false;
+  }
+}
+
+/**
+ * Scan all open tabs for McGraw-Hill pages
+ * Injects content script if needed to capture user data
+ */
+async function scanAllTabsForMcGrawHill() {
+  try {
+    const tabs = await chrome.tabs.query({});
+
+    for (const tab of tabs) {
+      if (!tab.url) continue;
+
+      if (isMcGrawHillUrl(tab.url)) {
+        console.log('[McGraw Plus] Found McGraw-Hill tab:', tab.id, tab.url);
+
+        // Try to inject/reinject content scripts to capture data
+        try {
+          // Note: api-interceptor.js runs in MAIN world, so we inject the bridge
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['content/api-bridge.js'],
+          });
+        } catch (err) {
+          // Script may already be injected or page doesn't allow
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[McGraw Plus] Failed to scan tabs:', err.message);
+  }
+}
+
+/**
+ * Track tab lifecycle for dashboard and onboarding
+ */
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  const result = await chrome.storage.local.get([
+    STORAGE_KEYS.DASHBOARD_TAB_ID,
+    STORAGE_KEYS.ONBOARDING_TAB_ID,
+  ]);
+
+  if (result[STORAGE_KEYS.DASHBOARD_TAB_ID] === tabId) {
+    await chrome.storage.local.remove(STORAGE_KEYS.DASHBOARD_TAB_ID);
+  }
+
+  if (result[STORAGE_KEYS.ONBOARDING_TAB_ID] === tabId) {
+    await chrome.storage.local.remove(STORAGE_KEYS.ONBOARDING_TAB_ID);
+  }
+});
 
 /**
  * Show a notification
@@ -241,24 +362,30 @@ async function dailyCleanup() {
     await chrome.storage.local.set({ responseMap: map });
   }
 
+  // Clean up stale locks
+  await chrome.storage.local.remove(STORAGE_KEYS.ONBOARDING_LOCK);
+
   console.log('[McGraw Plus] Daily cleanup complete');
 }
 
 /**
  * Handle tab updates - reactivate solver if enabled
+ * Also detect Connect page for auto-opening onboarding when profile is captured
  */
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (!tab.url) return;
 
-  const isMcGrawHill =
-    tab.url.includes('learning.mheducation.com') ||
-    tab.url.includes('connect.mheducation.com');
+  if (isMcGrawHillUrl(tab.url) && changeInfo.status === 'complete') {
+    const result = await chrome.storage.local.get([
+      STORAGE_KEYS.ONBOARDING_COMPLETE,
+      STORAGE_KEYS.SOLVER_ENABLED,
+    ]);
 
-  if (isMcGrawHill && changeInfo.status === 'complete') {
-    const result = await chrome.storage.local.get(STORAGE_KEYS.SOLVER_ENABLED);
-    const isEnabled = result[STORAGE_KEYS.SOLVER_ENABLED] === true;
+    // If onboarding not complete, the API interceptor will capture profile
+    // and send DATA_AVAILABLE message which triggers openOnboardingWithProfile
 
-    if (isEnabled) {
+    // Check if solver should be activated
+    if (result[STORAGE_KEYS.SOLVER_ENABLED] === true) {
       setTimeout(() => {
         chrome.tabs.sendMessage(tabId, { type: MSG.SOLVER_ACTIVATE }, () => {
           if (chrome.runtime.lastError) {
@@ -267,6 +394,35 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         });
       }, 500);
     }
+  }
+});
+
+/**
+ * Handle tab activation - check if switching to a McGraw-Hill tab
+ */
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    if (!tab.url) return;
+
+    if (isMcGrawHillUrl(tab.url)) {
+      const result = await chrome.storage.local.get(STORAGE_KEYS.ONBOARDING_COMPLETE);
+
+      if (!result[STORAGE_KEYS.ONBOARDING_COMPLETE]) {
+        // User switched to McGraw-Hill tab and onboarding not complete
+        // Try to inject content script to capture data
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['content/api-bridge.js'],
+          });
+        } catch (err) {
+          // May already be injected
+        }
+      }
+    }
+  } catch (err) {
+    // Tab may not exist
   }
 });
 
@@ -299,9 +455,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
       break;
 
-    case MSG.CHECK_UPDATE:
-      checkForUpdate().then(() => sendResponse({ success: true }));
-      return true;
+    case MSG.DATA_AVAILABLE:
+      // User profile captured - check if should auto-open onboarding
+      (async () => {
+        const result = await chrome.storage.local.get(STORAGE_KEYS.ONBOARDING_COMPLETE);
+        if (!result[STORAGE_KEYS.ONBOARDING_COMPLETE]) {
+          // Onboarding not complete, open onboarding with captured profile
+          openOnboardingWithProfile();
+        }
+        // If onboarding already complete, do nothing - don't auto-open dashboard
+      })();
+      sendResponse({ success: true });
+      break;
 
     case MSG.SHOW_NOTIFICATION:
       showNotification(message.data?.title, message.data?.message);
@@ -325,15 +490,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 chrome.alarms.onAlarm.addListener((alarm) => {
   switch (alarm.name) {
-    case 'checkBlockStatus':
-      checkBlockStatus();
-      break;
-
-    case 'checkForUpdate':
-    case 'initialUpdateCheck':
-      checkForUpdate();
-      break;
-
     case 'dueDateReminders':
       checkDueDateReminders();
       break;
@@ -351,19 +507,17 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('[McGraw Plus] Extension installed/updated:', details.reason);
 
   if (details.reason === 'install') {
-    // First install - open onboarding
+    // First install - mark the install time (NO auto-open onboarding)
     await chrome.storage.local.set({ [STORAGE_KEYS.FIRST_INSTALL]: Date.now() });
-
-    // Open onboarding page
-    chrome.tabs.create({
-      url: chrome.runtime.getURL('onboarding/onboarding.html'),
-    });
 
     // Run migration from old extension if data exists
     await migrateFromLegacy();
   } else if (details.reason === 'update') {
     // Check if we need to migrate
     await migrateFromLegacy();
+
+    // Clear any stale locks on update
+    await chrome.storage.local.remove(STORAGE_KEYS.ONBOARDING_LOCK);
   }
 
   // Setup context menu
@@ -372,9 +526,8 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   // Setup alarms
   setupAlarms();
 
-  // Check block status and updates
-  checkBlockStatus();
-  checkForUpdate();
+  // Scan all tabs for McGraw-Hill pages to capture user data
+  setTimeout(scanAllTabsForMcGrawHill, 1000);
 });
 
 /**
@@ -417,23 +570,18 @@ chrome.commands.onCommand.addListener((command) => {
  */
 chrome.runtime.onStartup.addListener(() => {
   setupAlarms();
-  checkBlockStatus();
-  checkForUpdate();
+
+  // Clear any stale locks
+  chrome.storage.local.remove(STORAGE_KEYS.ONBOARDING_LOCK);
+
+  // Scan all tabs for McGraw-Hill pages
+  setTimeout(scanAllTabsForMcGrawHill, 1000);
 });
 
 /**
  * Setup periodic alarms
  */
 function setupAlarms() {
-  // Block status check every 1 hour (kill switch / force update)
-  chrome.alarms.create('checkBlockStatus', { periodInMinutes: 60 });
-
-  // Update check every 6 hours
-  chrome.alarms.create('checkForUpdate', { periodInMinutes: 360 });
-
-  // Check for update 1 minute after startup
-  chrome.alarms.create('initialUpdateCheck', { delayInMinutes: 1 });
-
   // Due date reminders every 30 minutes
   chrome.alarms.create('dueDateReminders', { periodInMinutes: 30 });
 

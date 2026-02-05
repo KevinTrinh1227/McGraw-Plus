@@ -8,11 +8,8 @@
 
   // Config
   const CONFIG = {
-    VERSION_URL: 'https://raw.githubusercontent.com/KevinTrinh1227/McGraw-Plus/main/version.json',
-    REPO_URL: 'https://github.com/KevinTrinh1227/McGraw-Plus',
-    RELEASES_URL: 'https://github.com/KevinTrinh1227/McGraw-Plus/releases/latest',
-    REPO_OWNER: 'KevinTrinh1227',
-    REPO_NAME: 'McGraw-Plus',
+    WEBSITE_URL: 'https://mcgrawplus.pages.dev',
+    DOCS_URL: 'https://mcgrawplus.pages.dev/docs',
     CHECK_INTERVAL: 3600000, // 1 hour
   };
 
@@ -27,11 +24,15 @@
     LLM_PROVIDER: 'sbs_llm_provider',
     LLM_API_KEY: 'sbs_llm_api_key',
     EXTENSION_ENABLED: 'mp_extension_enabled',
-    STAR_VERIFIED: 'mp_star_verified',
-    STAR_USERNAME: 'mp_star_username',
     TERMS_ACCEPTED: 'mp_terms_accepted',
     USER_NAME: 'mp_user_name',
     ONBOARDING_COMPLETE: 'mp_onboarding_complete',
+    ONBOARDING_WAITING_FOR_CONNECT: 'mp_onboarding_waiting_for_connect',
+    ONBOARDING_COMPLETED_AT: 'mp_onboarding_completed_at',
+    DEVELOPER_MODE_ENABLED: 'mp_developer_mode_enabled',
+    SOLVER_ENABLED: 'mp_solver_enabled',
+    SOLVER_TERMS_AGREED: 'mp_solver_terms_agreed',
+    QUIZ_SOLVER_ENABLED: 'mp_quiz_solver_enabled',
   };
 
   // DOM Elements
@@ -47,8 +48,9 @@
     // Header
     profileBtn: $('profile-btn'),
     helpBtn: $('help-btn'),
-    shareBtn: $('share-btn'),
     settingsBtn: $('settings-btn'),
+    // Onboarding prompt
+    onboardingPrompt: $('onboarding-prompt'),
     // Main view
     userGreeting: $('user-greeting'),
     powerToggle: $('power-toggle'),
@@ -57,7 +59,7 @@
     mainView: $('main-view'),
     settingsView: $('settings-view'),
     helpView: $('help-view'),
-    shareView: $('share-view'),
+    profileView: $('profile-view'),
     // Status
     statusDot: $('status-dot'),
     statusText: $('status-text'),
@@ -65,12 +67,6 @@
     statQuestions: $('stat-questions'),
     statCorrect: $('stat-correct'),
     statStreak: $('stat-streak'),
-    // Star verification
-    starCard: $('star-card'),
-    starVerifiedBadge: $('star-verified-badge'),
-    githubUsername: $('github-username'),
-    verifyStarBtn: $('verify-star-btn'),
-    starStatus: $('star-status'),
     // Main toggles (now in settings)
     toggleDarkMode: $('toggle-dark-mode'),
     toggleKeyboard: $('toggle-keyboard'),
@@ -80,9 +76,16 @@
     settingProgressBar: $('setting-progress-bar'),
     settingTabTitle: $('setting-tab-title'),
     settingAntiCopy: $('setting-anti-copy'),
-    // Profile
-    profileName: $('profile-name'),
-    saveProfileBtn: $('save-profile-btn'),
+    // Experimental tab
+    experimentalTab: document.querySelector('.experimental-tab'),
+    solverEnabled: $('solver-enabled'),
+    quizSolverEnabled: $('quiz-solver-enabled'),
+    // Profile view
+    profileDisplayName: $('profile-display-name'),
+    profileMemberSince: $('profile-member-since'),
+    profileQuestions: $('profile-questions'),
+    profileAccuracy: $('profile-accuracy'),
+    profileStreak: $('profile-streak'),
     // Webhook
     webhookUrl: $('webhook-url'),
     saveWebhookBtn: $('save-webhook-btn'),
@@ -105,7 +108,6 @@
     // Version
     footerVersion: $('footer-version'),
     // Share
-    copyLinkBtn: $('copy-link-btn'),
     // Dashboard
     openDashboardBtn: $('open-dashboard-btn'),
   };
@@ -119,17 +121,159 @@
   async function init() {
     showVersion();
     await checkBlockStatus();
+
+    // Always set up onboarding button listeners first
+    setupOnboardingListeners();
+
+    const onboardingComplete = await checkOnboardingStatus();
+    if (!onboardingComplete) return; // Show onboarding prompt instead of main content
+
     await loadSettings();
     await loadStats();
     await loadUserProfile();
-    await loadStarStatus();
+    await loadProfileStats();
     await loadPowerStatus();
+    await loadDeveloperMode();
+    await loadExperimentalSettings();
     loadWebhookSettings();
     loadLlmSettings();
     loadStorageInfo();
     setupEventListeners();
     setupFaqToggle();
     checkPageStatus();
+  }
+
+  /**
+   * Setup onboarding-specific event listeners (called before onboarding check)
+   */
+  function setupOnboardingListeners() {
+    // Listen for onboarding completion to refresh popup
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === 'local' && changes[KEYS.ONBOARDING_COMPLETE]) {
+        if (changes[KEYS.ONBOARDING_COMPLETE].newValue === true) {
+          // Onboarding completed, reload popup to show main view
+          window.location.reload();
+        }
+      }
+    });
+  }
+
+  /**
+   * Check onboarding status and show appropriate view
+   */
+  async function checkOnboardingStatus() {
+    const result = await chrome.storage.local.get(KEYS.ONBOARDING_COMPLETE);
+
+    if (result[KEYS.ONBOARDING_COMPLETE]) {
+      // Onboarding complete, show main view
+      el.onboardingPrompt.classList.add('hidden');
+      el.mainView.classList.add('active');
+      return true;
+    }
+
+    // Onboarding not complete - show simple setup prompt
+    el.onboardingPrompt.classList.remove('hidden');
+    el.onboardingPrompt.classList.add('active');
+    el.mainView.classList.remove('active');
+
+    return false;
+  }
+
+  /**
+   * Check if user is on McGraw-Hill Connect page
+   */
+  async function checkConnectPageStatus() {
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const url = tabs[0]?.url || '';
+
+      // Check if on any McGraw-Hill page
+      const isMcGrawHill =
+        url.includes('connect.mheducation.com') ||
+        url.includes('learning.mheducation.com') ||
+        url.includes('newconnect.mheducation.com') ||
+        url.includes('connect.edu.mheducation.com') ||
+        url.includes('connect.router.integration.prod.mheducation.com');
+
+      return isMcGrawHill;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Load developer mode status
+   */
+  async function loadDeveloperMode() {
+    const result = await chrome.storage.local.get(KEYS.DEVELOPER_MODE_ENABLED);
+    const devModeEnabled = result[KEYS.DEVELOPER_MODE_ENABLED] === true;
+
+    if (devModeEnabled && el.experimentalTab) {
+      el.experimentalTab.classList.remove('hidden');
+    }
+  }
+
+  /**
+   * Load experimental settings
+   */
+  async function loadExperimentalSettings() {
+    const result = await chrome.storage.local.get([
+      KEYS.SOLVER_ENABLED,
+      KEYS.QUIZ_SOLVER_ENABLED
+    ]);
+
+    if (el.solverEnabled) {
+      el.solverEnabled.checked = result[KEYS.SOLVER_ENABLED] === true;
+    }
+    if (el.quizSolverEnabled) {
+      el.quizSolverEnabled.checked = result[KEYS.QUIZ_SOLVER_ENABLED] === true;
+    }
+  }
+
+  /**
+   * Load profile stats
+   */
+  async function loadProfileStats() {
+    const result = await chrome.storage.local.get([
+      KEYS.STATS,
+      KEYS.ONBOARDING_COMPLETED_AT,
+      KEYS.USER_NAME
+    ]);
+
+    const stats = result[KEYS.STATS] || {};
+    const completedAt = result[KEYS.ONBOARDING_COMPLETED_AT];
+    const userName = result[KEYS.USER_NAME];
+
+    // Profile name
+    if (el.profileDisplayName && userName) {
+      el.profileDisplayName.textContent = userName;
+    }
+
+    // Member since
+    if (el.profileMemberSince && completedAt) {
+      const date = new Date(completedAt);
+      el.profileMemberSince.textContent = date.toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+      });
+    }
+
+    // Questions answered
+    if (el.profileQuestions) {
+      el.profileQuestions.textContent = stats.totalQuestions || 0;
+    }
+
+    // Accuracy
+    if (el.profileAccuracy) {
+      const accuracy = stats.totalQuestions > 0
+        ? Math.round((stats.correctFirstTry / stats.totalQuestions) * 100)
+        : 0;
+      el.profileAccuracy.textContent = `${accuracy}%`;
+    }
+
+    // Streak
+    if (el.profileStreak) {
+      el.profileStreak.textContent = `${stats.streakDays || 0} days`;
+    }
   }
 
   /**
@@ -142,52 +286,17 @@
 
   /**
    * Check if extension should be blocked (kill switch or force update)
+   * Note: Version checking disabled - no external version endpoint configured
    */
   async function checkBlockStatus() {
     try {
-      const cached = await chrome.storage.local.get([KEYS.BLOCK_DATA, KEYS.LAST_VERSION_CHECK]);
-      const now = Date.now();
-      const lastCheck = cached[KEYS.LAST_VERSION_CHECK] || 0;
-
-      if (cached[KEYS.BLOCK_DATA] && (now - lastCheck < CONFIG.CHECK_INTERVAL)) {
-        handleBlockData(cached[KEYS.BLOCK_DATA]);
-        return;
-      }
-
-      const response = await fetch(CONFIG.VERSION_URL, {
-        signal: AbortSignal.timeout(5000),
-        cache: 'no-store',
-      });
-
-      if (!response.ok) return;
-
-      const data = await response.json();
-      const currentVersion = chrome.runtime.getManifest().version;
-
-      const blockData = {
-        killSwitch: data.killSwitch === true,
-        forceUpdate: data.forceUpdate === true,
-        minVersion: data.minVersion || '0.0.0',
-        latestVersion: data.version || currentVersion,
-        message: data.message || '',
-        downloadUrl: data.downloadUrl || CONFIG.RELEASES_URL,
-      };
-
-      if (compareVersions(currentVersion, blockData.minVersion) < 0) {
-        blockData.forceUpdate = true;
-      }
-
-      await chrome.storage.local.set({
-        [KEYS.BLOCK_DATA]: blockData,
-        [KEYS.LAST_VERSION_CHECK]: now,
-      });
-
-      handleBlockData(blockData);
-    } catch (error) {
+      // Check cached block data only - version checking disabled
       const cached = await chrome.storage.local.get(KEYS.BLOCK_DATA);
       if (cached[KEYS.BLOCK_DATA]) {
         handleBlockData(cached[KEYS.BLOCK_DATA]);
       }
+    } catch (error) {
+      // Ignore errors - extension continues normally
     }
   }
 
@@ -201,7 +310,7 @@
       el.blockTitle.textContent = 'Extension Disabled';
       el.blockMessage.textContent = data.message || 'This extension has been temporarily disabled. Please check back later.';
       el.blockBtn.textContent = 'Learn More';
-      el.blockBtn.href = CONFIG.REPO_URL;
+      el.blockBtn.href = CONFIG.WEBSITE_URL;
       el.blockOverlay.classList.remove('hidden');
       return;
     }
@@ -210,7 +319,7 @@
       el.blockTitle.textContent = 'Update Required';
       el.blockMessage.textContent = data.message || `Version ${data.latestVersion} is available. Please update to continue using McGraw Plus.`;
       el.blockBtn.textContent = 'Download Update';
-      el.blockBtn.href = data.downloadUrl || CONFIG.RELEASES_URL;
+      el.blockBtn.href = data.downloadUrl || CONFIG.WEBSITE_URL;
       el.blockOverlay.classList.remove('hidden');
       return;
     }
@@ -321,137 +430,6 @@
   }
 
   /**
-   * Load star verification status
-   */
-  async function loadStarStatus() {
-    const result = await chrome.storage.local.get([KEYS.STAR_VERIFIED, KEYS.STAR_USERNAME]);
-
-    if (result[KEYS.STAR_VERIFIED]) {
-      el.starCard.classList.add('hidden');
-      el.starVerifiedBadge.classList.remove('hidden');
-      if (result[KEYS.STAR_USERNAME]) {
-        el.githubUsername.value = result[KEYS.STAR_USERNAME];
-      }
-    } else {
-      el.starCard.classList.remove('hidden');
-      el.starVerifiedBadge.classList.add('hidden');
-      if (result[KEYS.STAR_USERNAME]) {
-        el.githubUsername.value = result[KEYS.STAR_USERNAME];
-      }
-    }
-  }
-
-  /**
-   * Verify GitHub star
-   */
-  async function verifyGitHubStar() {
-    const username = el.githubUsername.value.trim();
-
-    if (!username) {
-      showStarStatus('Please enter your GitHub username', 'error');
-      return;
-    }
-
-    showStarStatus('Verifying...', 'loading');
-
-    try {
-      // GitHub API: Get stargazers (case-insensitive comparison)
-      const response = await fetch(
-        `https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/stargazers?per_page=100`,
-        {
-          headers: { Accept: 'application/vnd.github.v3+json' },
-          signal: AbortSignal.timeout(10000),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch stargazers');
-      }
-
-      const stargazers = await response.json();
-
-      // Case-insensitive search
-      const found = stargazers.some(
-        (user) => user.login.toLowerCase() === username.toLowerCase()
-      );
-
-      if (found) {
-        // Save verification
-        await chrome.storage.local.set({
-          [KEYS.STAR_VERIFIED]: true,
-          [KEYS.STAR_USERNAME]: username,
-        });
-
-        showStarStatus('Star verified! Thank you!', 'success');
-
-        // Update UI after short delay
-        setTimeout(() => {
-          el.starCard.classList.add('hidden');
-          el.starVerifiedBadge.classList.remove('hidden');
-        }, 1500);
-      } else {
-        // Check if they might have starred recently (paginated results)
-        // Try fetching more pages
-        let page = 2;
-        let verified = false;
-
-        while (page <= 10 && !verified) {
-          const nextResponse = await fetch(
-            `https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/stargazers?per_page=100&page=${page}`,
-            {
-              headers: { Accept: 'application/vnd.github.v3+json' },
-              signal: AbortSignal.timeout(10000),
-            }
-          );
-
-          if (!nextResponse.ok) break;
-
-          const nextStargazers = await nextResponse.json();
-          if (nextStargazers.length === 0) break;
-
-          const foundInPage = nextStargazers.some(
-            (user) => user.login.toLowerCase() === username.toLowerCase()
-          );
-
-          if (foundInPage) {
-            verified = true;
-            await chrome.storage.local.set({
-              [KEYS.STAR_VERIFIED]: true,
-              [KEYS.STAR_USERNAME]: username,
-            });
-
-            showStarStatus('Star verified! Thank you!', 'success');
-            setTimeout(() => {
-              el.starCard.classList.add('hidden');
-              el.starVerifiedBadge.classList.remove('hidden');
-            }, 1500);
-          }
-
-          page++;
-        }
-
-        if (!verified) {
-          // Save username for convenience
-          await chrome.storage.local.set({ [KEYS.STAR_USERNAME]: username });
-          showStarStatus('Star not found. Please star the repo first!', 'error');
-        }
-      }
-    } catch (error) {
-      showStarStatus('Error verifying. Try again later.', 'error');
-      console.error('Star verification error:', error);
-    }
-  }
-
-  /**
-   * Show star status message
-   */
-  function showStarStatus(message, type) {
-    el.starStatus.textContent = message;
-    el.starStatus.className = `star-status ${type}`;
-    el.starStatus.classList.remove('hidden');
-  }
-
-  /**
    * Load settings
    */
   async function loadSettings() {
@@ -529,7 +507,7 @@
    * Switch view with animation
    */
   function switchView(viewId) {
-    const views = ['main', 'settings', 'help', 'share'];
+    const views = ['main', 'settings', 'help', 'profile'];
     views.forEach((v) => {
       const viewEl = $(`${v}-view`);
       if (viewEl) {
@@ -541,6 +519,11 @@
       }
     });
     currentView = viewId;
+
+    // Reload profile stats when opening profile view
+    if (viewId === 'profile') {
+      loadProfileStats();
+    }
   }
 
   /**
@@ -575,36 +558,16 @@
    * Setup event listeners
    */
   function setupEventListeners() {
-    // Profile button - navigate to settings > advanced > profile
+    // Profile button - navigate to profile view
     el.profileBtn.addEventListener('click', () => {
-      switchView('settings');
-      // Switch to advanced tab
-      $$('.tab').forEach((t) => t.classList.remove('active'));
-      $$('.tab-content').forEach((c) => c.classList.remove('active'));
-      const advancedTab = document.querySelector('[data-tab="advanced"]');
-      const advancedContent = $('tab-advanced');
-      if (advancedTab && advancedContent) {
-        advancedTab.classList.add('active');
-        advancedContent.classList.add('active');
-        // Focus the profile name input
-        setTimeout(() => {
-          el.profileName?.focus();
-        }, 100);
-      }
+      switchView('profile');
     });
 
     // Power toggle
     el.powerToggle.addEventListener('click', togglePower);
 
-    // Star verification
-    el.verifyStarBtn.addEventListener('click', verifyGitHubStar);
-    el.githubUsername.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') verifyGitHubStar();
-    });
-
     // Header buttons
     el.helpBtn.addEventListener('click', () => switchView('help'));
-    el.shareBtn.addEventListener('click', () => switchView('share'));
     el.settingsBtn.addEventListener('click', () => switchView('settings'));
 
     // Back buttons
@@ -653,15 +616,44 @@
       saveSettings({ antiCopy: el.settingAntiCopy.checked });
     });
 
-    // Profile
-    el.saveProfileBtn.addEventListener('click', async () => {
-      const name = el.profileName.value.trim();
-      if (name) {
-        await chrome.storage.local.set({ [KEYS.USER_NAME]: name });
-        await loadUserProfile();
-        showToast('Name saved!');
-      }
-    });
+    // Experimental settings
+    if (el.solverEnabled) {
+      el.solverEnabled.addEventListener('change', async () => {
+        const enabled = el.solverEnabled.checked;
+        if (enabled) {
+          // Check if terms agreed
+          const result = await chrome.storage.local.get(KEYS.SOLVER_TERMS_AGREED);
+          if (!result[KEYS.SOLVER_TERMS_AGREED]) {
+            const agreed = confirm(
+              'SmartBook Solver Terms\n\n' +
+              'By enabling this feature, you acknowledge:\n\n' +
+              '• This tool is for educational purposes only\n' +
+              '• You are responsible for your academic integrity\n' +
+              '• Use at your own risk\n\n' +
+              'Do you agree to these terms?'
+            );
+            if (!agreed) {
+              el.solverEnabled.checked = false;
+              return;
+            }
+            await chrome.storage.local.set({
+              [KEYS.SOLVER_TERMS_AGREED]: true,
+              mp_solver_terms_agreed_at: Date.now()
+            });
+          }
+        }
+        await chrome.storage.local.set({ [KEYS.SOLVER_ENABLED]: enabled });
+        showToast(enabled ? 'Solver enabled' : 'Solver disabled');
+      });
+    }
+
+    if (el.quizSolverEnabled) {
+      el.quizSolverEnabled.addEventListener('change', async () => {
+        const enabled = el.quizSolverEnabled.checked;
+        await chrome.storage.local.set({ [KEYS.QUIZ_SOLVER_ENABLED]: enabled });
+        showToast(enabled ? 'Quiz Solver enabled' : 'Quiz Solver disabled');
+      });
+    }
 
     // Webhook
     el.saveWebhookBtn.addEventListener('click', () => {
@@ -820,12 +812,6 @@
       }
     });
 
-    // Share
-    el.copyLinkBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(CONFIG.REPO_URL);
-      showToast('Link copied!');
-    });
-
     // Dashboard
     el.openDashboardBtn.addEventListener('click', () => {
       chrome.tabs.create({
@@ -836,9 +822,21 @@
 
     // Listen for storage changes
     chrome.storage.onChanged.addListener((changes) => {
-      if (changes[KEYS.STATS]) loadStats();
+      if (changes[KEYS.STATS]) {
+        loadStats();
+        loadProfileStats();
+      }
       if (changes.responseMap) loadStorageInfo();
-      if (changes[KEYS.USER_NAME]) loadUserProfile();
+      if (changes[KEYS.USER_NAME]) {
+        loadUserProfile();
+        loadProfileStats();
+      }
+      if (changes[KEYS.DEVELOPER_MODE_ENABLED]) {
+        const enabled = changes[KEYS.DEVELOPER_MODE_ENABLED].newValue === true;
+        if (el.experimentalTab) {
+          el.experimentalTab.classList.toggle('hidden', !enabled);
+        }
+      }
     });
   }
 

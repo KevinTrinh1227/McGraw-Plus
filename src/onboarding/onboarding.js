@@ -1,6 +1,6 @@
 /**
- * McGraw Plus - Onboarding Script v2.2.0
- * New flow: Version Check -> Terms -> Welcome -> Login -> Features -> Pin -> Complete
+ * McGraw Plus - Onboarding Script v2.7.0
+ * Clean, minimal onboarding flow
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,52 +12,40 @@ document.addEventListener('DOMContentLoaded', () => {
     TERMS_ACCEPTED: 'mp_terms_accepted',
     TERMS_ACCEPTED_AT: 'mp_terms_accepted_at',
     USER_NAME: 'mp_user_name',
-    PIN_PROMPT_SHOWN_AT: 'mp_pin_prompt_shown_at',
     DUE_DATES: 'mp_due_dates',
     COURSES: 'mp_courses',
+    SECTIONS: 'mp_sections',
+    USER_PROFILE: 'mp_user_profile',
+    INSTRUCTORS: 'mp_instructors',
+    BOOKS: 'mp_books',
   };
 
-  // Config
-  const CONFIG = {
-    VERSION_URL: 'https://raw.githubusercontent.com/KevinTrinh1227/McGraw-Plus/main/version.json',
-    VERSION_RETRY_COUNT: 3,
-    VERSION_RETRY_DELAY: 1000,
-  };
-
-  // Feature definitions (from defaults.json)
-  const FEATURES = {
-    darkMode: { id: 'darkMode', name: 'Dark Mode', description: 'Comfortable dark theme for studying', icon: '🌙', default: true, category: 'appearance' },
-    keyboardShortcuts: { id: 'keyboardShortcuts', name: 'Keyboard Shortcuts', description: 'Use 1-4 or A-D to select answers', icon: '⌨️', default: true, category: 'productivity' },
-    dueDateTracker: { id: 'dueDateTracker', name: 'Due Date Tracker', description: 'Track assignment deadlines', icon: '📅', default: true, category: 'organization' },
-    statsTracker: { id: 'statsTracker', name: 'Stats Tracker', description: 'Track your study progress', icon: '📊', default: true, category: 'analytics' },
-    notifications: { id: 'notifications', name: 'Notifications', description: 'Reminders for due dates', icon: '🔔', default: true, category: 'organization' },
-    quickCopy: { id: 'quickCopy', name: 'Quick Copy', description: 'Copy questions with one click', icon: '📋', default: false, category: 'productivity' },
-    flashcardGenerator: { id: 'flashcardGenerator', name: 'Flashcards', description: 'Create flashcards from questions', icon: '🎴', default: false, category: 'study' },
-    focusMode: { id: 'focusMode', name: 'Focus Mode', description: 'Hide distractions while studying', icon: '🎯', default: false, category: 'productivity' },
-    pdfExport: { id: 'pdfExport', name: 'PDF Export', description: 'Export Q&A to PDF', icon: '📄', default: false, category: 'study' },
-    studyTimer: { id: 'studyTimer', name: 'Study Timer', description: 'Pomodoro timer for sessions', icon: '⏱️', default: false, category: 'productivity' },
-    progressBar: { id: 'progressBar', name: 'Progress Bar', description: 'Visual completion indicator', icon: '📈', default: true, category: 'analytics' },
-    readability: { id: 'readability', name: 'Readability', description: 'Improve text formatting', icon: '📖', default: false, category: 'appearance' },
-    tabTitle: { id: 'tabTitle', name: 'Tab Title Progress', description: 'Show progress in browser tab', icon: '📑', default: true, category: 'productivity' },
-    autoResume: { id: 'autoResume', name: 'Auto Resume', description: 'Continue where you left off', icon: '▶️', default: false, category: 'productivity' },
-    confidenceMarker: { id: 'confidenceMarker', name: 'Confidence Marker', description: 'Track confidence on questions', icon: '💪', default: false, category: 'study' },
-    antiCopy: { id: 'antiCopy', name: 'Text Selection', description: 'Enable copy on restricted pages', icon: '✂️', default: false, category: 'accessibility' },
+  // Default settings
+  const DEFAULT_SETTINGS = {
+    darkMode: false,
+    keyboardShortcuts: false,
+    dueDateTracker: true,
+    statsTracker: false,
+    notifications: true,
+    quickCopy: true,
+    flashcardGenerator: false,
+    focusMode: false,
+    pdfExport: false,
+    studyTimer: true,
+    progressBar: false,
+    readability: false,
+    tabTitle: false,
+    autoResume: false,
+    confidenceMarker: false,
+    antiCopy: false,
+    solverEnabled: false,
   };
 
   // State
   let currentSlide = 0;
-  const totalSlides = 7; // 0-6
-  let isLoggedIn = false;
-  let loginCheckInterval = null;
+  const totalSlides = 4;
   let userName = '';
-  let selectedFeatures = {};
-  let versionCheckPassed = false;
-  let versionRetryCount = 0;
-
-  // Initialize selected features with defaults
-  Object.keys(FEATURES).forEach(key => {
-    selectedFeatures[key] = FEATURES[key].default;
-  });
+  let termsScrolledToEnd = false;
 
   // DOM Elements
   const $ = (id) => document.getElementById(id);
@@ -66,320 +54,244 @@ document.addEventListener('DOMContentLoaded', () => {
   const elements = {
     slides: $$('.slide'),
     progressDots: $$('.progress-dot'),
-    skipBtn: $('skip-btn'),
-    backBtn: $('back-btn'),
-    nextBtn: $('next-btn'),
-    // Version check
-    versionChecking: $('version-checking'),
-    versionOk: $('version-ok'),
-    versionOutdated: $('version-outdated'),
-    versionError: $('version-error'),
-    currentVersion: $('current-version'),
-    yourVersion: $('your-version'),
-    latestVersion: $('latest-version'),
-    retryVersionBtn: $('retry-version-btn'),
-    // Terms
-    termsNameInput: $('terms-name-input'),
-    // Welcome
-    welcomeName: $('welcome-name'),
-    // Login
-    loginStatus: $('login-status'),
-    loginBtn: $('login-btn'),
-    checkLoginBtn: $('check-login-btn'),
-    // Features
-    featuresGrid: $('features-grid'),
-    enableAllBtn: $('enable-all-btn'),
-    disableAllBtn: $('disable-all-btn'),
-    // Pin
-    pinArrow: $('pin-arrow'),
-    // Complete
-    completeName: $('complete-name'),
-    completeDate: $('complete-date'),
-    completeTime: $('complete-time'),
+    // Slide 0
+    userNameDisplay: $('user-name-display'),
+    profileName: $('profile-name'),
+    profileEmail: $('profile-email'),
+    profileUserId: $('profile-user-id'),
+    profileInstitution: $('profile-institution'),
+    institutionRow: $('institution-row'),
+    setupDate: $('setup-date'),
+    setupTime: $('setup-time'),
+    viewTermsBtn: $('view-terms-btn'),
+    slide0Next: $('slide-0-next'),
+    // Slide 1
+    statCourses: $('stat-courses'),
+    statAssignments: $('stat-assignments'),
+    statCompleted: $('stat-completed'),
+    statPending: $('stat-pending'),
+    overdueWarning: $('overdue-warning'),
+    overdueText: $('overdue-text'),
+    noDataWarning: $('no-data-warning'),
+    instructorSection: $('instructor-section'),
+    instructorList: $('instructor-list'),
+    booksSection: $('books-section'),
+    booksList: $('books-list'),
+    slide1Back: $('slide-1-back'),
+    slide1Next: $('slide-1-next'),
+    // Slide 2
+    slide2Back: $('slide-2-back'),
+    slide2Next: $('slide-2-next'),
+    // Terms Modal
+    termsModal: $('terms-modal'),
+    closeTermsModal: $('close-terms-modal'),
+    termsScrollContainer: $('terms-scroll-container'),
+    termsConfirmBtn: $('terms-confirm-btn'),
+    // Toast
+    connectionToast: $('connection-toast'),
     // Confetti
     confettiCanvas: $('confetti-canvas'),
   };
 
   /**
-   * Detect browser type for pin arrow positioning
+   * Initialize onboarding
    */
-  function detectBrowser() {
-    const ua = navigator.userAgent.toLowerCase();
-
-    if (ua.includes('arc')) return 'arc';
-    if (ua.includes('vivaldi')) return 'vivaldi';
-    if (ua.includes('opera') || ua.includes('opr')) return 'opera';
-    if (ua.includes('brave')) return 'brave';
-    if (ua.includes('edg')) return 'edge';
-    if (ua.includes('chrome')) return 'chrome';
-    if (ua.includes('firefox')) return 'firefox';
-    if (ua.includes('safari')) return 'safari';
-
-    return 'chrome'; // default
+  async function init() {
+    showConnectionToast();
+    await loadUserData();
+    setTimestamp();
+    setupEventListeners();
+    showSlide(0);
   }
 
   /**
-   * Position pin arrow based on browser
+   * Show connection toast
    */
-  function positionPinArrow() {
-    const browser = detectBrowser();
-    const arrow = elements.pinArrow;
-
-    if (!arrow) return;
-
-    // Remove any existing position classes
-    arrow.classList.remove('chrome', 'edge', 'brave', 'opera', 'vivaldi', 'arc');
-
-    // Add browser-specific class
-    arrow.classList.add(browser);
-    arrow.classList.remove('hidden');
+  function showConnectionToast() {
+    const toast = elements.connectionToast;
+    if (toast) {
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => {
+          toast.classList.add('hidden');
+          toast.classList.remove('fade-out');
+        }, 300);
+      }, 2000);
+    }
   }
 
   /**
-   * Check version against remote
+   * Load user data from storage
    */
-  async function checkVersion() {
-    showVersionStatus('checking');
+  async function loadUserData() {
+    const result = await chrome.storage.local.get([
+      KEYS.COURSES,
+      KEYS.SECTIONS,
+      KEYS.DUE_DATES,
+      KEYS.USER_PROFILE,
+      KEYS.INSTRUCTORS,
+      KEYS.BOOKS,
+    ]);
 
-    const currentVersion = chrome.runtime.getManifest().version;
-    elements.currentVersion.textContent = currentVersion;
-    elements.yourVersion.textContent = currentVersion;
+    const courses = result[KEYS.COURSES] || [];
+    const sections = result[KEYS.SECTIONS] || [];
+    const assignments = result[KEYS.DUE_DATES] || [];
+    const userProfile = result[KEYS.USER_PROFILE] || {};
+    const instructors = result[KEYS.INSTRUCTORS] || [];
+    const books = result[KEYS.BOOKS] || [];
 
-    try {
-      const response = await fetch(CONFIG.VERSION_URL, {
-        signal: AbortSignal.timeout(5000),
-        cache: 'no-store',
-      });
+    // Course count (use sections as fallback)
+    const courseCount = courses.length > 0 ? courses.length : sections.length;
 
-      if (!response.ok) throw new Error('Failed to fetch version');
+    // Get user name
+    userName = userProfile.name || '';
+    if (!userName && (userProfile.firstName || userProfile.lastName)) {
+      userName = `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim();
+    }
+    if (!userName && courses.length > 0) {
+      userName = courses[0].userName || '';
+    }
+    if (!userName) {
+      userName = 'User';
+    }
 
-      const data = await response.json();
-      const minVersion = data.minVersion || '0.0.0';
-      const latestVersion = data.version || currentVersion;
+    // Update name displays
+    if (elements.userNameDisplay) elements.userNameDisplay.textContent = userName;
+    if (elements.profileName) elements.profileName.textContent = userName;
 
-      elements.latestVersion.textContent = latestVersion;
-
-      // Compare versions
-      if (compareVersions(currentVersion, minVersion) < 0) {
-        // Outdated - block
-        showVersionStatus('outdated');
-        versionCheckPassed = false;
-        return;
-      }
-
-      // Version OK
-      showVersionStatus('ok');
-      versionCheckPassed = true;
-      updateNextButton();
-
-    } catch (error) {
-      console.error('[McGraw Plus] Version check error:', error);
-      versionRetryCount++;
-
-      if (versionRetryCount < CONFIG.VERSION_RETRY_COUNT) {
-        // Retry after delay
-        setTimeout(checkVersion, CONFIG.VERSION_RETRY_DELAY);
+    // Update profile card
+    if (elements.profileEmail) {
+      elements.profileEmail.textContent = userProfile.email || 'Not available';
+    }
+    if (elements.profileUserId) {
+      const userId = userProfile.userId || userProfile.id || userProfile.accountId;
+      elements.profileUserId.textContent = userId ? formatUserId(userId) : 'Not available';
+    }
+    if (elements.profileInstitution && elements.institutionRow) {
+      const institution = userProfile.institutionName || userProfile.schoolName;
+      if (institution) {
+        elements.profileInstitution.textContent = institution;
       } else {
-        // Show error but allow continue with warning
-        showVersionStatus('error');
-        versionCheckPassed = true; // Allow to proceed with warning
-        updateNextButton();
+        elements.institutionRow.style.display = 'none';
       }
     }
-  }
 
-  /**
-   * Show version status
-   */
-  function showVersionStatus(status) {
-    elements.versionChecking.classList.add('hidden');
-    elements.versionOk.classList.add('hidden');
-    elements.versionOutdated.classList.add('hidden');
-    elements.versionError.classList.add('hidden');
-
-    switch (status) {
-      case 'checking':
-        elements.versionChecking.classList.remove('hidden');
-        break;
-      case 'ok':
-        elements.versionOk.classList.remove('hidden');
-        break;
-      case 'outdated':
-        elements.versionOutdated.classList.remove('hidden');
-        break;
-      case 'error':
-        elements.versionError.classList.remove('hidden');
-        break;
-    }
-  }
-
-  /**
-   * Compare semantic versions
-   */
-  function compareVersions(a, b) {
-    const pa = a.split('.').map(Number);
-    const pb = b.split('.').map(Number);
-    for (let i = 0; i < 3; i++) {
-      const na = pa[i] || 0;
-      const nb = pb[i] || 0;
-      if (na > nb) return 1;
-      if (na < nb) return -1;
-    }
-    return 0;
-  }
-
-  /**
-   * Update login status display
-   */
-  function updateLoginStatus(status, message) {
-    const statusHtml = {
-      checking: `
-        <div class="status-indicator checking">
-          <div class="spinner"></div>
-          <span>${message || 'Checking login status...'}</span>
-        </div>
-      `,
-      'logged-in': `
-        <div class="status-indicator logged-in">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-          <span>${message || 'Connected to McGraw-Hill'}</span>
-        </div>
-      `,
-      'logged-out': `
-        <div class="status-indicator logged-out">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          <span>${message || 'Not connected yet'}</span>
-        </div>
-      `,
-    };
-
-    elements.loginStatus.innerHTML = statusHtml[status] || statusHtml.checking;
-  }
-
-  /**
-   * Check if user is logged in to Connect
-   */
-  async function checkLoginStatus() {
-    updateLoginStatus('checking');
-
-    try {
-      // Check cached data
-      const result = await chrome.storage.local.get([KEYS.COURSES, KEYS.DUE_DATES]);
-      const courses = result[KEYS.COURSES] || [];
-      const assignments = result[KEYS.DUE_DATES] || [];
-
-      if (courses.length > 0 || assignments.length > 0) {
-        isLoggedIn = true;
-        updateLoginStatus('logged-in', `Found ${courses.length} courses`);
-        return true;
-      }
-
-      // Query open Connect tabs
-      const tabs = await chrome.tabs.query({ url: '*://*.mheducation.com/*' });
-
-      if (tabs.length > 0) {
-        for (const tab of tabs) {
-          try {
-            const response = await chrome.tabs.sendMessage(tab.id, { type: 'CHECK_LOGIN' });
-            if (response && response.loggedIn) {
-              isLoggedIn = true;
-              updateLoginStatus('logged-in', 'Connected to McGraw-Hill');
-              return true;
-            }
-          } catch (e) {
-            // Content script might not be loaded
-          }
-        }
-      }
-
-      isLoggedIn = false;
-      updateLoginStatus('logged-out', 'Please log in to Connect');
-      return false;
-    } catch (error) {
-      console.error('[McGraw Plus] Login check error:', error);
-      isLoggedIn = false;
-      updateLoginStatus('logged-out', 'Unable to verify login');
-      return false;
-    }
-  }
-
-  /**
-   * Build features grid
-   */
-  function buildFeaturesGrid(category = 'all') {
-    const grid = elements.featuresGrid;
-    grid.innerHTML = '';
-
-    const featureList = Object.values(FEATURES).filter(f =>
-      category === 'all' || f.category === category
-    );
-
-    featureList.forEach(feature => {
-      const card = document.createElement('label');
-      card.className = `feature-card ${selectedFeatures[feature.id] ? 'selected' : ''}`;
-      card.dataset.featureId = feature.id;
-
-      card.innerHTML = `
-        <input type="checkbox" ${selectedFeatures[feature.id] ? 'checked' : ''} />
-        <span class="feature-checkbox"></span>
-        <span class="feature-icon">${feature.icon}</span>
-        <span class="feature-name">${feature.name}</span>
-        <span class="feature-desc">${feature.description}</span>
-      `;
-
-      const checkbox = card.querySelector('input');
-      checkbox.addEventListener('change', () => {
-        selectedFeatures[feature.id] = checkbox.checked;
-        card.classList.toggle('selected', checkbox.checked);
-      });
-
-      grid.appendChild(card);
+    // Calculate stats
+    const completedAssignments = assignments.filter(a => {
+      return a.completed === true ||
+             a.status === 'completed' ||
+             a.status === 'COMPLETED' ||
+             a.status === 'COMPLETE' ||
+             a.status === 'Completed' ||
+             a.progress === 100 ||
+             a.percentComplete === 100;
     });
-  }
-
-  /**
-   * Enable/disable all features
-   */
-  function setAllFeatures(enabled) {
-    Object.keys(FEATURES).forEach(key => {
-      selectedFeatures[key] = enabled;
+    const pendingAssignments = assignments.filter(a => {
+      const isCompleted = a.completed === true ||
+                          a.status === 'completed' ||
+                          a.status === 'COMPLETED' ||
+                          a.status === 'COMPLETE' ||
+                          a.status === 'Completed' ||
+                          a.progress === 100 ||
+                          a.percentComplete === 100;
+      return !isCompleted;
     });
-    buildFeaturesGrid(getCurrentCategory());
-  }
+    const now = Date.now();
+    const overdueAssignments = pendingAssignments.filter(a => {
+      if (!a.dueDate) return false;
+      const dueDate = new Date(a.dueDate).getTime();
+      return !isNaN(dueDate) && dueDate < now;
+    });
 
-  /**
-   * Get current category filter
-   */
-  function getCurrentCategory() {
-    const activeTab = document.querySelector('.feature-tab.active');
-    return activeTab?.dataset.category || 'all';
-  }
+    // Update stats
+    if (elements.statCourses) elements.statCourses.textContent = courseCount;
+    if (elements.statAssignments) elements.statAssignments.textContent = assignments.length;
+    if (elements.statCompleted) elements.statCompleted.textContent = completedAssignments.length;
+    if (elements.statPending) elements.statPending.textContent = pendingAssignments.length;
 
-  /**
-   * Update next button state based on current slide
-   */
-  function updateNextButton() {
-    let canProceed = true;
-
-    switch (currentSlide) {
-      case 0: // Version check
-        canProceed = versionCheckPassed;
-        break;
-      case 1: // Terms
-        canProceed = elements.termsNameInput.value.trim().length >= 2;
-        break;
-      default:
-        canProceed = true;
+    // Overdue warning
+    if (overdueAssignments.length > 0 && elements.overdueWarning) {
+      elements.overdueWarning.classList.remove('hidden');
+      if (elements.overdueText) {
+        elements.overdueText.textContent = `${overdueAssignments.length} overdue assignment${overdueAssignments.length > 1 ? 's' : ''}`;
+      }
     }
 
-    elements.nextBtn.disabled = !canProceed;
+    // No data warning
+    if (courseCount === 0 && assignments.length === 0 && elements.noDataWarning) {
+      elements.noDataWarning.classList.remove('hidden');
+    }
+
+    // Display instructors
+    if (instructors.length > 0 && elements.instructorSection && elements.instructorList) {
+      elements.instructorSection.classList.remove('hidden');
+      elements.instructorList.innerHTML = instructors.map(instructor => `
+        <div class="data-item">
+          <span class="data-item-icon">👨‍🏫</span>
+          <div class="data-item-info">
+            <span class="data-item-name">${escapeHtml(instructor.name)}</span>
+            ${instructor.email ? `<span class="data-item-detail">${escapeHtml(instructor.email)}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Display books
+    if (books.length > 0 && elements.booksSection && elements.booksList) {
+      elements.booksSection.classList.remove('hidden');
+      elements.booksList.innerHTML = books.map(book => `
+        <div class="data-item">
+          <span class="data-item-icon">📖</span>
+          <div class="data-item-info">
+            <span class="data-item-name">${escapeHtml(book.title)}</span>
+            ${book.author ? `<span class="data-item-detail">by ${escapeHtml(book.author)}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  /**
+   * Escape HTML
+   */
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  /**
+   * Format user ID
+   */
+  function formatUserId(userId) {
+    if (!userId) return 'Not available';
+    const id = String(userId);
+    if (id.length > 20) {
+      return id.substring(0, 8) + '...' + id.substring(id.length - 6);
+    }
+    return id;
+  }
+
+  /**
+   * Set timestamp
+   */
+  function setTimestamp() {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const timeStr = now.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    if (elements.setupDate) elements.setupDate.textContent = dateStr;
+    if (elements.setupTime) elements.setupTime.textContent = timeStr;
   }
 
   /**
@@ -399,73 +311,114 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Update buttons
-    elements.backBtn.classList.toggle('hidden', num === 0);
-
-    if (num === totalSlides - 1) {
-      elements.nextBtn.textContent = 'Get Started';
-      elements.skipBtn.classList.add('hidden');
-    } else {
-      elements.nextBtn.textContent = 'Next';
-      elements.skipBtn.classList.remove('hidden');
-    }
-
-    // Slide-specific logic
-    switch (num) {
-      case 0: // Version check
-        checkVersion();
-        break;
-      case 1: // Terms
-        elements.termsNameInput.focus();
-        break;
-      case 2: // Welcome
-        elements.welcomeName.textContent = userName || 'there';
-        break;
-      case 3: // Login
-        checkLoginStatus();
-        if (!loginCheckInterval) {
-          loginCheckInterval = setInterval(() => {
-            if (currentSlide === 3) checkLoginStatus();
-          }, 5000);
-        }
-        break;
-      case 4: // Features
-        buildFeaturesGrid();
-        break;
-      case 5: // Pin
-        positionPinArrow();
-        chrome.storage.local.set({ [KEYS.PIN_PROMPT_SHOWN_AT]: Date.now() });
-        break;
-      case 6: // Complete
-        elements.completeName.textContent = userName || 'User';
-        const now = new Date();
-        elements.completeDate.textContent = now.toLocaleDateString('en-US', {
-          year: 'numeric', month: 'long', day: 'numeric'
-        });
-        elements.completeTime.textContent = now.toLocaleTimeString('en-US', {
-          hour: 'numeric', minute: '2-digit', hour12: true
-        });
-        triggerConfetti();
-        break;
-    }
-
-    // Clear login interval if not on login slide
-    if (num !== 3 && loginCheckInterval) {
-      clearInterval(loginCheckInterval);
-      loginCheckInterval = null;
-    }
-
     currentSlide = num;
-    updateNextButton();
+
+    // Complete onboarding on last slide
+    if (num === totalSlides - 1) {
+      completeOnboarding();
+      triggerConfetti();
+    }
   }
 
   /**
-   * Trigger confetti celebration
+   * Setup event listeners
+   */
+  function setupEventListeners() {
+    // View terms
+    if (elements.viewTermsBtn) {
+      elements.viewTermsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        elements.termsModal.classList.remove('hidden');
+      });
+    }
+
+    // Close terms modal
+    if (elements.closeTermsModal) {
+      elements.closeTermsModal.addEventListener('click', () => {
+        elements.termsModal.classList.add('hidden');
+      });
+    }
+
+    // Terms scroll detection
+    if (elements.termsScrollContainer) {
+      elements.termsScrollContainer.addEventListener('scroll', () => {
+        const container = elements.termsScrollContainer;
+        const scrolledToBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+
+        if (scrolledToBottom && !termsScrolledToEnd) {
+          termsScrolledToEnd = true;
+          if (elements.termsConfirmBtn) {
+            elements.termsConfirmBtn.disabled = false;
+          }
+        }
+      });
+    }
+
+    // Terms confirm
+    if (elements.termsConfirmBtn) {
+      elements.termsConfirmBtn.addEventListener('click', () => {
+        elements.termsModal.classList.add('hidden');
+      });
+    }
+
+    // Navigation
+    if (elements.slide0Next) {
+      elements.slide0Next.addEventListener('click', () => showSlide(1));
+    }
+    if (elements.slide1Back) {
+      elements.slide1Back.addEventListener('click', () => showSlide(0));
+    }
+    if (elements.slide1Next) {
+      elements.slide1Next.addEventListener('click', () => showSlide(2));
+    }
+    if (elements.slide2Back) {
+      elements.slide2Back.addEventListener('click', () => showSlide(1));
+    }
+    if (elements.slide2Next) {
+      elements.slide2Next.addEventListener('click', () => showSlide(3));
+    }
+
+    // Close modal on outside click
+    if (elements.termsModal) {
+      elements.termsModal.addEventListener('click', (e) => {
+        if (e.target === elements.termsModal) {
+          elements.termsModal.classList.add('hidden');
+        }
+      });
+    }
+
+    // Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !elements.termsModal.classList.contains('hidden')) {
+        elements.termsModal.classList.add('hidden');
+      }
+    });
+  }
+
+  /**
+   * Complete onboarding
+   */
+  async function completeOnboarding() {
+    const now = Date.now();
+
+    await chrome.storage.local.set({
+      [KEYS.SETTINGS]: DEFAULT_SETTINGS,
+      [KEYS.ONBOARDING_COMPLETE]: true,
+      [KEYS.ONBOARDING_COMPLETED_AT]: now,
+      [KEYS.TERMS_ACCEPTED]: true,
+      [KEYS.TERMS_ACCEPTED_AT]: now,
+      [KEYS.USER_NAME]: userName,
+    });
+  }
+
+  /**
+   * Trigger confetti
    */
   function triggerConfetti() {
     const canvas = elements.confettiCanvas;
-    const ctx = canvas.getContext('2d');
+    if (!canvas) return;
 
+    const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     canvas.style.display = 'block';
@@ -473,22 +426,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const particles = [];
     const colors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6'];
 
-    // Create particles
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < 100; i++) {
       particles.push({
         x: canvas.width / 2,
         y: canvas.height / 2,
-        vx: (Math.random() - 0.5) * 20,
-        vy: (Math.random() - 0.5) * 20 - 10,
+        vx: (Math.random() - 0.5) * 16,
+        vy: (Math.random() - 0.5) * 16 - 8,
         color: colors[Math.floor(Math.random() * colors.length)],
-        size: Math.random() * 8 + 4,
+        size: Math.random() * 6 + 3,
         rotation: Math.random() * 360,
         rotationSpeed: (Math.random() - 0.5) * 10,
       });
     }
 
     let frame = 0;
-    const maxFrames = 180;
+    const maxFrames = 120;
 
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -496,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
       particles.forEach(p => {
         p.x += p.vx;
         p.y += p.vy;
-        p.vy += 0.3; // gravity
+        p.vy += 0.3;
         p.rotation += p.rotationSpeed;
 
         ctx.save();
@@ -518,132 +470,6 @@ document.addEventListener('DOMContentLoaded', () => {
     animate();
   }
 
-  /**
-   * Save settings and complete onboarding
-   */
-  async function completeOnboarding() {
-    const settings = { ...selectedFeatures };
-
-    await chrome.storage.local.set({
-      [KEYS.SETTINGS]: settings,
-      [KEYS.ONBOARDING_COMPLETE]: true,
-      [KEYS.ONBOARDING_COMPLETED_AT]: Date.now(),
-      [KEYS.TERMS_ACCEPTED]: true,
-      [KEYS.TERMS_ACCEPTED_AT]: Date.now(),
-      [KEYS.USER_NAME]: userName,
-    });
-
-    // Navigate to Connect
-    window.location.href = 'https://connect.mheducation.com/';
-  }
-
-  /**
-   * Skip onboarding with defaults
-   */
-  async function skipOnboarding() {
-    const settings = {};
-    Object.keys(FEATURES).forEach(key => {
-      settings[key] = FEATURES[key].default;
-    });
-
-    await chrome.storage.local.set({
-      [KEYS.SETTINGS]: settings,
-      [KEYS.ONBOARDING_COMPLETE]: true,
-      [KEYS.ONBOARDING_COMPLETED_AT]: Date.now(),
-    });
-
-    window.close();
-  }
-
-  /**
-   * Handle next button
-   */
-  function handleNext() {
-    // Save terms name when leaving slide 1
-    if (currentSlide === 1) {
-      userName = elements.termsNameInput.value.trim();
-    }
-
-    if (currentSlide === totalSlides - 1) {
-      completeOnboarding();
-    } else if (currentSlide === 3 && !isLoggedIn) {
-      // Warn about not being logged in
-      const proceed = confirm(
-        'You haven\'t logged in to Connect yet. ' +
-        'Some features like due date tracking won\'t work until you log in.\n\n' +
-        'Continue anyway?'
-      );
-      if (proceed) {
-        showSlide(currentSlide + 1);
-      }
-    } else {
-      showSlide(currentSlide + 1);
-    }
-  }
-
-  // Event listeners
-  elements.nextBtn.addEventListener('click', handleNext);
-
-  elements.backBtn.addEventListener('click', () => {
-    if (currentSlide > 0) {
-      showSlide(currentSlide - 1);
-    }
-  });
-
-  elements.skipBtn.addEventListener('click', skipOnboarding);
-
-  elements.retryVersionBtn?.addEventListener('click', () => {
-    versionRetryCount = 0;
-    checkVersion();
-  });
-
-  elements.termsNameInput?.addEventListener('input', updateNextButton);
-
-  elements.checkLoginBtn?.addEventListener('click', checkLoginStatus);
-
-  elements.enableAllBtn?.addEventListener('click', () => setAllFeatures(true));
-  elements.disableAllBtn?.addEventListener('click', () => setAllFeatures(false));
-
-  // Feature category tabs
-  $$('.feature-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      $$('.feature-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      buildFeaturesGrid(tab.dataset.category);
-    });
-  });
-
-  // Visibility change detection
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && currentSlide === 3) {
-      setTimeout(checkLoginStatus, 1000);
-    }
-  });
-
-  // Storage change listener
-  chrome.storage.onChanged.addListener((changes) => {
-    if (changes[KEYS.COURSES] || changes[KEYS.DUE_DATES]) {
-      if (currentSlide === 3) {
-        checkLoginStatus();
-      }
-    }
-  });
-
-  // Keyboard navigation
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight' || e.key === 'Enter') {
-      if (!elements.nextBtn.disabled) {
-        handleNext();
-      }
-    } else if (e.key === 'ArrowLeft') {
-      if (currentSlide > 0) {
-        showSlide(currentSlide - 1);
-      }
-    } else if (e.key === 'Escape') {
-      skipOnboarding();
-    }
-  });
-
   // Initialize
-  showSlide(0);
+  init();
 });

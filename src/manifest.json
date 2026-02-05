@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "McGraw Plus",
-  "version": "2.2.0",
+  "version": "2.5.0",
   "description": "A study companion for McGraw-Hill SmartBook. Features dark mode, keyboard shortcuts, due date tracking, flashcard generation, and more.",
   "icons": {
     "16": "assets/icons/icon-16.png",
@@ -39,8 +39,8 @@
     "*://learning.mheducation.com/*",
     "*://connect.mheducation.com/*",
     "*://newconnect.mheducation.com/*",
+    "*://connect.edu.mheducation.com/*",
     "*://connect.router.integration.prod.mheducation.com/*",
-    "https://api.github.com/*",
     "https://discord.com/api/webhooks/*",
     "https://api.groq.com/*",
     "https://api.openai.com/*",
@@ -52,9 +52,23 @@
         "*://learning.mheducation.com/*",
         "*://connect.mheducation.com/*",
         "*://newconnect.mheducation.com/*",
+        "*://connect.edu.mheducation.com/*",
+        "*://connect.router.integration.prod.mheducation.com/*"
+      ],
+      "js": ["content/api-interceptor.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://learning.mheducation.com/*",
+        "*://connect.mheducation.com/*",
+        "*://newconnect.mheducation.com/*",
+        "*://connect.edu.mheducation.com/*",
         "*://connect.router.integration.prod.mheducation.com/*"
       ],
       "js": [
+        "content/api-bridge.js",
         "shared/utils.js",
         "shared/storage.js",
         "shared/messaging.js",
@@ -84,6 +98,7 @@
         "*://learning.mheducation.com/*",
         "*://connect.mheducation.com/*",
         "*://newconnect.mheducation.com/*",
+        "*://connect.edu.mheducation.com/*",
         "*://connect.router.integration.prod.mheducation.com/*"
       ]
     }

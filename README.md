@@ -80,12 +80,35 @@
 | Topic | Link |
 |-------|------|
 | Architecture | [docs/OVERVIEW.md](docs/OVERVIEW.md) |
-| Data Scraping | [docs/SCRAPING.md](docs/SCRAPING.md) |
+| Data Capture | [docs/SCRAPING.md](docs/SCRAPING.md) |
 | Onboarding | [docs/ONBOARDING.md](docs/ONBOARDING.md) |
 | Features | [docs/FEATURES.md](docs/FEATURES.md) |
 | Privacy | [docs/PRIVACY.md](docs/PRIVACY.md) |
 | Security | [docs/SECURITY.md](docs/SECURITY.md) |
 | Troubleshooting | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
+| Changelog | [CHANGELOG.md](CHANGELOG.md) |
+
+---
+
+## Data Capture
+
+McGraw Plus automatically captures your account data from McGraw-Hill Connect:
+
+| Data Type | Source |
+|-----------|--------|
+| User Profile | `/caas/api/user/details` |
+| Courses & Sections | `/openapi/paam/studentAssignments` |
+| Assignments | `/openapi/paam/studentAssignments` |
+| Instructors | Section data & `/api/ccs/section/{id}/instructorInfo` |
+| Textbooks | `/openapi/paam/sectionBooks/{id}` |
+
+**Debug Mode:** Open browser console and run:
+```javascript
+window.__MCGRAW_PLUS_DEBUG = true  // Enable verbose logging
+window.__mcgrawPlusCaptures        // View all captured data
+```
+
+See [Data Capture Guide](docs/SCRAPING.md) for full API documentation.
 
 ---
 
