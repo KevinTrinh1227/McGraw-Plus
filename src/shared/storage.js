@@ -292,6 +292,63 @@ const Storage = {
   },
 
   /**
+   * Get cached value with TTL check
+   * @param {string} key - Storage key
+   * @param {number} maxAgeMs - Maximum age in milliseconds
+   */
+  async getCachedWithTTL(key, maxAgeMs = 3600000) {
+    const data = await this.get(key);
+    if (!data) return null;
+
+    const timestamp = data.scrapedAt || data.timestamp || data.cachedAt;
+    if (!timestamp || Date.now() - timestamp > maxAgeMs) {
+      return null; // Expired
+    }
+
+    return data;
+  },
+
+  /**
+   * Set cached value with timestamp
+   * @param {string} key - Storage key
+   * @param {any} value - Value to cache
+   */
+  async setCachedWithTimestamp(key, value) {
+    const data = {
+      ...value,
+      cachedAt: Date.now(),
+    };
+    await this.set(key, data);
+    return data;
+  },
+
+  /**
+   * Invalidate cache for a key
+   * @param {string} key - Storage key to invalidate
+   */
+  async invalidateCache(key) {
+    await this.remove(key);
+  },
+
+  /**
+   * Check if storage was recently cleared (graceful recovery)
+   */
+  async checkStorageHealth() {
+    try {
+      const marker = await this.get('mp_storage_marker');
+      if (!marker) {
+        // Storage was cleared, set marker and return false
+        await this.set('mp_storage_marker', { createdAt: Date.now() });
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('[McGraw Plus] Storage health check failed:', error);
+      return false;
+    }
+  },
+
+  /**
    * Setup unload handler to flush pending saves
    */
   setupUnloadHandler() {

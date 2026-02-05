@@ -18,24 +18,6 @@
         </div>
       </div>
 
-      <!-- Terms Overlay -->
-      <div id="terms-overlay" class="hidden">
-        <div class="block-content">
-          <div class="block-icon">📋</div>
-          <h2>Terms of Use</h2>
-          <p class="terms-text">By using McGraw Plus, you acknowledge:</p>
-          <ul class="terms-list">
-            <li>This tool is for educational purposes only</li>
-            <li>You are responsible for your own academic integrity</li>
-            <li>Use at your own risk</li>
-          </ul>
-          <div class="terms-name">
-            <input type="text" id="terms-name-input" class="input" placeholder="Enter your name..." />
-          </div>
-          <button id="accept-terms-btn" class="btn primary full" disabled>I Understand & Accept</button>
-        </div>
-      </div>
-
       <!-- Header -->
       <header>
         <div class="header-left">
@@ -43,6 +25,12 @@
           <span class="title">McGraw Plus</span>
         </div>
         <div class="header-right">
+          <button id="profile-btn" class="icon-btn" title="Profile">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </button>
           <button id="help-btn" class="icon-btn" title="Help">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
@@ -236,12 +224,6 @@
               <button id="resync-data-btn" class="btn small outline full">Re-sync Data</button>
               <button id="reset-all-btn" class="btn small danger full">Reset Everything</button>
             </div>
-
-            <div class="about">
-              <span>v<span id="version">2.0.0</span></span>
-              <a href="https://github.com/KevinTrinh1227/McGraw-Plus" target="_blank">GitHub</a>
-              <a href="https://github.com/KevinTrinh1227/McGraw-Plus/issues" target="_blank">Issues</a>
-            </div>
           </div>
         </div>
 
@@ -257,6 +239,7 @@
           </div>
 
           <div class="help-content">
+            <!-- Keyboard Shortcuts -->
             <div class="help-section">
               <h4>Keyboard Shortcuts</h4>
               <div class="shortcut"><kbd>1-4</kbd> or <kbd>A-D</kbd> Select answer</div>
@@ -264,11 +247,89 @@
               <div class="shortcut"><kbd>Ctrl+Shift+D</kbd> Dark mode</div>
               <div class="shortcut"><kbd>Ctrl+Shift+M</kbd> Dashboard</div>
             </div>
+
+            <!-- FAQ Section -->
             <div class="help-section">
-              <h4>Not Working?</h4>
-              <p>Make sure you're on a SmartBook page, then refresh.</p>
+              <h4>FAQ</h4>
+              <div class="faq-item">
+                <button class="faq-question">
+                  <span>Why isn't the extension working?</span>
+                  <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+                <div class="faq-answer">
+                  Make sure you're on a McGraw-Hill SmartBook page (mheducation.com), the extension is enabled via the power toggle, and try refreshing the page.
+                </div>
+              </div>
+              <div class="faq-item">
+                <button class="faq-question">
+                  <span>How do I track my assignments?</span>
+                  <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+                <div class="faq-answer">
+                  Assignments are automatically tracked when you visit the Connect dashboard. Open the Dashboard (Ctrl+Shift+M) to view your calendar and upcoming deadlines.
+                </div>
+              </div>
+              <div class="faq-item">
+                <button class="faq-question">
+                  <span>Is my data private?</span>
+                  <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+                <div class="faq-answer">
+                  Yes! All data is stored locally in your browser. No telemetry or tracking. The only external connections are optional (Discord webhooks, AI assistant).
+                </div>
+              </div>
             </div>
-            <a href="https://github.com/KevinTrinh1227/McGraw-Plus/issues" target="_blank" class="btn outline full">Report an Issue</a>
+
+            <!-- Quick Links -->
+            <div class="help-section">
+              <h4>Quick Links</h4>
+              <div class="quick-links">
+                <a href="https://mcgrawplus.pages.dev/docs" target="_blank" class="quick-link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                  </svg>
+                  Docs
+                </a>
+                <a href="https://mcgrawplus.pages.dev/privacy" target="_blank" class="quick-link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                  Privacy
+                </a>
+                <a href="https://mcgrawplus.pages.dev/terms" target="_blank" class="quick-link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  Terms
+                </a>
+                <a href="https://mcgrawplus.pages.dev/security" target="_blank" class="quick-link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                  Security
+                </a>
+              </div>
+            </div>
+
+            <!-- Help Footer -->
+            <div class="help-footer">
+              <p>Can't find what you need?</p>
+              <div class="help-footer-links">
+                <a href="https://mcgrawplus.pages.dev/docs" target="_blank" class="btn small outline">Full Docs</a>
+                <a href="https://github.com/KevinTrinh1227/McGraw-Plus/issues" target="_blank" class="btn small outline">Report Issue</a>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -326,8 +387,12 @@
 
       <!-- Footer -->
       <footer class="popup-footer">
-        <span>v<span id="footer-version">2.0.0</span></span>
-        <span class="footer-divider">•</span>
+        <span>v<span id="footer-version">2.2.0</span></span>
+        <span class="footer-divider">|</span>
+        <a href="https://mcgrawplus.pages.dev/notice" target="_blank">Notice</a>
+        <span class="footer-divider">|</span>
+        <a href="https://mcgrawplus.pages.dev" target="_blank">Website</a>
+        <span class="footer-divider">|</span>
         <a href="https://github.com/KevinTrinh1227/McGraw-Plus" target="_blank">GitHub</a>
       </footer>
     </div>

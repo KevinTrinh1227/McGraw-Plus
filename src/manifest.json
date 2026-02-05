@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "McGraw Plus",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "A study companion for McGraw-Hill SmartBook. Features dark mode, keyboard shortcuts, due date tracking, flashcard generation, and more.",
   "icons": {
     "16": "assets/icons/icon-16.png",
@@ -38,6 +38,8 @@
   "host_permissions": [
     "*://learning.mheducation.com/*",
     "*://connect.mheducation.com/*",
+    "*://newconnect.mheducation.com/*",
+    "*://connect.router.integration.prod.mheducation.com/*",
     "https://api.github.com/*",
     "https://discord.com/api/webhooks/*",
     "https://api.groq.com/*",
@@ -48,7 +50,9 @@
     {
       "matches": [
         "*://learning.mheducation.com/*",
-        "*://connect.mheducation.com/*"
+        "*://connect.mheducation.com/*",
+        "*://newconnect.mheducation.com/*",
+        "*://connect.router.integration.prod.mheducation.com/*"
       ],
       "js": [
         "shared/utils.js",
@@ -78,7 +82,9 @@
       ],
       "matches": [
         "*://learning.mheducation.com/*",
-        "*://connect.mheducation.com/*"
+        "*://connect.mheducation.com/*",
+        "*://newconnect.mheducation.com/*",
+        "*://connect.router.integration.prod.mheducation.com/*"
       ]
     }
   ]

@@ -31,32 +31,17 @@ Thank you for your interest in contributing to McGraw Plus! This document provid
 src/
 ├── manifest.json           # Extension configuration
 ├── popup/                  # Popup UI
-│   ├── popup.html
-│   ├── popup.css
-│   └── popup.js
 ├── onboarding/             # First-run onboarding
-│   ├── onboarding.html
-│   ├── onboarding.css
-│   └── onboarding.js
+├── dashboard/              # Full-featured dashboard
 ├── background/             # Service worker
-│   └── service-worker.js
-├── content/                # Content scripts
-│   ├── main.js            # Feature loader
-│   ├── dark-mode.css
-│   ├── focus-mode.css
-│   ├── overlay.js
-│   ├── overlay.css
-│   ├── anti-copy.js
-│   └── solver.js
+├── content/                # Content scripts (injected into pages)
 ├── shared/                 # Shared modules
-│   ├── storage.js
-│   ├── messaging.js
-│   └── utils.js
-├── config/                 # Configuration
-│   └── defaults.json
+├── config/                 # Configuration files
 ├── libs/                   # Third-party libraries
 └── assets/                 # Icons and images
 ```
+
+For detailed architecture, see [docs/OVERVIEW.md](docs/OVERVIEW.md).
 
 ## Guidelines
 
@@ -109,7 +94,7 @@ For questions, open a discussion or issue with the `question` label.
 
 ## Code of Conduct
 
-Be respectful and constructive. We're all here to learn and build something useful.
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 
 ---
 

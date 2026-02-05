@@ -10,7 +10,8 @@
     <div class="container">
       <!-- Progress indicator -->
       <div class="progress">
-        <div class="progress-dot active" data-step="1"></div>
+        <div class="progress-dot active" data-step="0"></div>
+        <div class="progress-dot" data-step="1"></div>
         <div class="progress-dot" data-step="2"></div>
         <div class="progress-dot" data-step="3"></div>
         <div class="progress-dot" data-step="4"></div>
@@ -20,24 +21,136 @@
 
       <!-- Slides -->
       <div class="slides-container">
-        <!-- Slide 1: Welcome -->
-        <div class="slide active" id="slide-1">
-          <div class="slide-icon">📚</div>
-          <h1>Welcome to McGraw Plus</h1>
-          <p class="subtitle">A study companion for McGraw-Hill SmartBook</p>
-          <p class="description">
-            McGraw Plus enhances your study experience with helpful features like dark mode,
-            keyboard shortcuts, due date tracking, and more.
-          </p>
+        <!-- Slide 0: Version Check -->
+        <div class="slide active" id="slide-0">
+          <div id="version-checking" class="version-status">
+            <div class="spinner large"></div>
+            <h2>Checking Version</h2>
+            <p class="description">Verifying you have the latest version...</p>
+          </div>
+
+          <div id="version-ok" class="version-status hidden">
+            <div class="slide-icon">✓</div>
+            <h2>Version Up to Date</h2>
+            <p class="description">You're running the latest version of McGraw Plus.</p>
+            <div class="version-info">
+              <span class="version-label">Current Version</span>
+              <span class="version-value" id="current-version">2.2.0</span>
+            </div>
+          </div>
+
+          <div id="version-outdated" class="version-status hidden">
+            <div class="slide-icon warning">⚠️</div>
+            <h2>Update Required</h2>
+            <p class="description">A newer version is available. Please update to continue.</p>
+            <div class="version-compare">
+              <div class="version-item">
+                <span class="version-label">Your Version</span>
+                <span class="version-value outdated" id="your-version">2.0.0</span>
+              </div>
+              <div class="version-item">
+                <span class="version-label">Latest Version</span>
+                <span class="version-value latest" id="latest-version">2.2.0</span>
+              </div>
+            </div>
+            <a href="https://github.com/KevinTrinh1227/McGraw-Plus/releases/latest" target="_blank" class="btn primary full">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download Update
+            </a>
+          </div>
+
+          <div id="version-error" class="version-status hidden">
+            <div class="slide-icon warning">⚠️</div>
+            <h2>Unable to Verify</h2>
+            <p class="description">Couldn't check for updates. You can continue, but some features may not work correctly.</p>
+            <button id="retry-version-btn" class="btn secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+              Try Again
+            </button>
+          </div>
         </div>
 
-        <!-- Slide 2: Login to Connect -->
+        <!-- Slide 1: Terms of Service -->
+        <div class="slide" id="slide-1">
+          <div class="slide-icon">📋</div>
+          <h2>Terms of Use</h2>
+          <p class="description">Please read and accept our terms before continuing.</p>
+
+          <div class="terms-card">
+            <p class="terms-intro">By using McGraw Plus, you acknowledge:</p>
+            <ul class="terms-list">
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                This tool is for <strong>educational purposes only</strong>
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                You are responsible for your own <strong>academic integrity</strong>
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Use at your own <strong>risk</strong>
+              </li>
+            </ul>
+          </div>
+
+          <div class="terms-name-section">
+            <label for="terms-name-input">Enter your full name to accept:</label>
+            <input type="text" id="terms-name-input" class="input" placeholder="Your full name..." autocomplete="name" />
+          </div>
+        </div>
+
+        <!-- Slide 2: Welcome (Personalized) -->
         <div class="slide" id="slide-2">
-          <div class="slide-icon">🔐</div>
-          <h2>First, Log In to Connect</h2>
+          <div class="slide-icon">👋</div>
+          <h1>Welcome, <span id="welcome-name">there</span>!</h1>
+          <p class="subtitle">Your McGraw-Hill study companion</p>
           <p class="description">
-            To get started, you need to be logged in to McGraw-Hill Connect.
-            This allows us to automatically sync your courses and assignments.
+            McGraw Plus enhances your study experience with powerful features like dark mode,
+            keyboard shortcuts, due date tracking, flashcards, and more.
+          </p>
+          <div class="feature-highlights">
+            <div class="feature-highlight">
+              <span class="feature-highlight-icon">🌙</span>
+              <span>Dark Mode</span>
+            </div>
+            <div class="feature-highlight">
+              <span class="feature-highlight-icon">⌨️</span>
+              <span>Shortcuts</span>
+            </div>
+            <div class="feature-highlight">
+              <span class="feature-highlight-icon">📅</span>
+              <span>Tracking</span>
+            </div>
+            <div class="feature-highlight">
+              <span class="feature-highlight-icon">📊</span>
+              <span>Stats</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 3: Login to Connect -->
+        <div class="slide" id="slide-3">
+          <div class="slide-icon">🔐</div>
+          <h2>Connect Your Account</h2>
+          <p class="description">
+            Log in to McGraw-Hill Connect to enable automatic assignment syncing and due date tracking.
           </p>
 
           <div class="login-section">
@@ -67,70 +180,27 @@
           </div>
         </div>
 
-        <!-- Slide 3: Features -->
-        <div class="slide" id="slide-3">
-          <h2>Study Smarter</h2>
-          <div class="features-grid">
-            <div class="feature-card">
-              <span class="feature-icon">🌙</span>
-              <span class="feature-name">Dark Mode</span>
-              <span class="feature-desc">Easy on your eyes for late-night studying</span>
-            </div>
-            <div class="feature-card">
-              <span class="feature-icon">⌨️</span>
-              <span class="feature-name">Keyboard Shortcuts</span>
-              <span class="feature-desc">Navigate faster with 1-4 or A-D keys</span>
-            </div>
-            <div class="feature-card">
-              <span class="feature-icon">📅</span>
-              <span class="feature-name">Due Date Tracker</span>
-              <span class="feature-desc">Never miss an assignment deadline</span>
-            </div>
-            <div class="feature-card">
-              <span class="feature-icon">📊</span>
-              <span class="feature-name">Progress Stats</span>
-              <span class="feature-desc">Track your study progress over time</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Slide 4: Preferences -->
+        <!-- Slide 4: Feature Selection -->
         <div class="slide" id="slide-4">
-          <h2>Customize Your Experience</h2>
-          <p class="description">Choose which features to enable by default. You can change these later in settings.</p>
-          <div class="preferences-list">
-            <label class="pref-item">
-              <input type="checkbox" id="pref-dark-mode" checked />
-              <span class="pref-checkbox"></span>
-              <div class="pref-info">
-                <span class="pref-name">🌙 Dark Mode</span>
-                <span class="pref-desc">Apply dark theme to SmartBook pages</span>
-              </div>
-            </label>
-            <label class="pref-item">
-              <input type="checkbox" id="pref-keyboard" checked />
-              <span class="pref-checkbox"></span>
-              <div class="pref-info">
-                <span class="pref-name">⌨️ Keyboard Shortcuts</span>
-                <span class="pref-desc">Use 1-4 or A-D to select answers</span>
-              </div>
-            </label>
-            <label class="pref-item">
-              <input type="checkbox" id="pref-due-dates" checked />
-              <span class="pref-checkbox"></span>
-              <div class="pref-info">
-                <span class="pref-name">📅 Due Date Tracking</span>
-                <span class="pref-desc">Track and get reminders for assignments</span>
-              </div>
-            </label>
-            <label class="pref-item">
-              <input type="checkbox" id="pref-notifications" checked />
-              <span class="pref-checkbox"></span>
-              <div class="pref-info">
-                <span class="pref-name">🔔 Notifications</span>
-                <span class="pref-desc">Get reminders for upcoming deadlines</span>
-              </div>
-            </label>
+          <h2>Choose Your Features</h2>
+          <p class="description">Select which features to enable. You can change these anytime in settings.</p>
+
+          <div class="feature-tabs">
+            <button class="feature-tab active" data-category="all">All</button>
+            <button class="feature-tab" data-category="appearance">Appearance</button>
+            <button class="feature-tab" data-category="productivity">Productivity</button>
+            <button class="feature-tab" data-category="organization">Organization</button>
+            <button class="feature-tab" data-category="study">Study</button>
+            <button class="feature-tab" data-category="analytics">Analytics</button>
+          </div>
+
+          <div class="feature-actions">
+            <button id="enable-all-btn" class="btn small outline">Enable All</button>
+            <button id="disable-all-btn" class="btn small outline">Disable All</button>
+          </div>
+
+          <div id="features-grid" class="features-grid">
+            <!-- Features will be populated by JS -->
           </div>
         </div>
 
@@ -139,29 +209,36 @@
           <div class="slide-icon">📌</div>
           <h2>Pin for Quick Access</h2>
           <p class="description">
-            Pin McGraw Plus to your toolbar for easy access to features while studying.
+            Pin McGraw Plus to your toolbar so it's always one click away.
           </p>
+
+          <!-- Browser-specific arrow will be positioned by JS -->
+          <div id="pin-arrow" class="pin-arrow hidden">
+            <div class="pin-arrow-line"></div>
+            <div class="pin-arrow-head"></div>
+            <span class="pin-arrow-label">Click here!</span>
+          </div>
 
           <div class="pin-instructions">
             <div class="pin-step">
               <span class="pin-step-number">1</span>
               <div class="pin-step-content">
                 <span class="pin-step-title">Click the puzzle icon</span>
-                <span class="pin-step-desc">Find the extensions icon (puzzle piece) in your browser toolbar</span>
+                <span class="pin-step-desc">Find the extensions icon in your browser toolbar</span>
               </div>
             </div>
             <div class="pin-step">
               <span class="pin-step-number">2</span>
               <div class="pin-step-content">
                 <span class="pin-step-title">Find McGraw Plus</span>
-                <span class="pin-step-desc">Look for McGraw Plus in the dropdown list</span>
+                <span class="pin-step-desc">Look for the 📚 McGraw Plus extension</span>
               </div>
             </div>
             <div class="pin-step">
               <span class="pin-step-number">3</span>
               <div class="pin-step-content">
                 <span class="pin-step-title">Click the pin icon</span>
-                <span class="pin-step-desc">Click the pin to keep it visible in your toolbar</span>
+                <span class="pin-step-desc">Pin it to keep it visible in your toolbar</span>
               </div>
             </div>
           </div>
@@ -169,40 +246,32 @@
           <p class="pin-note">You can skip this step and pin later if you prefer.</p>
         </div>
 
-        <!-- Slide 6: Ready -->
+        <!-- Slide 6: Complete -->
         <div class="slide" id="slide-6">
-          <div class="slide-icon">🚀</div>
+          <div class="slide-icon">🎉</div>
           <h2>You're All Set!</h2>
 
-          <div id="sync-status" class="sync-card">
-            <div class="sync-row">
-              <span class="sync-label">Courses Found</span>
-              <span class="sync-value" id="courses-count">0</span>
+          <div class="complete-card">
+            <div class="complete-greeting">
+              Welcome, <strong id="complete-name">User</strong>
             </div>
-            <div class="sync-row">
-              <span class="sync-label">Assignments</span>
-              <span class="sync-value" id="assignments-count">0</span>
-            </div>
-            <div class="sync-row">
-              <span class="sync-label">Upcoming Due</span>
-              <span class="sync-value" id="upcoming-count">0</span>
+            <div class="complete-timestamp">
+              Completed on <span id="complete-date">February 5, 2026</span> at <span id="complete-time">3:45 PM</span>
             </div>
           </div>
 
-          <p class="description">
-            McGraw Plus is ready to use. Click the extension icon while on a SmartBook page
-            to access all features.
+          <p class="complete-message">
+            You now have access to McGraw Plus. Click the extension icon while on a SmartBook page to start using all features.
           </p>
-          <div class="ready-tips">
-            <div class="tip">
-              <span class="tip-icon">💡</span>
-              <span>Use <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> to toggle dark mode</span>
-            </div>
-            <div class="tip">
-              <span class="tip-icon">💡</span>
-              <span>Press <kbd>1</kbd>-<kbd>4</kbd> to quickly select answers</span>
-            </div>
-          </div>
+
+          <a href="https://mcgrawplus.pages.dev" target="_blank" class="btn outline full website-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            Visit Website
+          </a>
         </div>
       </div>
 
@@ -211,10 +280,13 @@
         <button id="skip-btn" class="btn secondary">Skip</button>
         <div class="nav-right">
           <button id="back-btn" class="btn secondary hidden">Back</button>
-          <button id="next-btn" class="btn primary">Next</button>
+          <button id="next-btn" class="btn primary" disabled>Next</button>
         </div>
       </div>
     </div>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
 
     <script src="onboarding.js"></script>
   </body>

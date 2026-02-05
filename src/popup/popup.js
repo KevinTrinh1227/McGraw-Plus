@@ -44,10 +44,8 @@
     blockTitle: $('block-title'),
     blockMessage: $('block-message'),
     blockBtn: $('block-btn'),
-    termsOverlay: $('terms-overlay'),
-    termsNameInput: $('terms-name-input'),
-    acceptTermsBtn: $('accept-terms-btn'),
     // Header
+    profileBtn: $('profile-btn'),
     helpBtn: $('help-btn'),
     shareBtn: $('share-btn'),
     settingsBtn: $('settings-btn'),
@@ -105,7 +103,6 @@
     resyncDataBtn: $('resync-data-btn'),
     resetAllBtn: $('reset-all-btn'),
     // Version
-    version: $('version'),
     footerVersion: $('footer-version'),
     // Share
     copyLinkBtn: $('copy-link-btn'),
@@ -122,7 +119,6 @@
   async function init() {
     showVersion();
     await checkBlockStatus();
-    await checkTermsAccepted();
     await loadSettings();
     await loadStats();
     await loadUserProfile();
@@ -132,6 +128,7 @@
     loadLlmSettings();
     loadStorageInfo();
     setupEventListeners();
+    setupFaqToggle();
     checkPageStatus();
   }
 
@@ -140,18 +137,7 @@
    */
   function showVersion() {
     const version = chrome.runtime.getManifest().version;
-    if (el.version) el.version.textContent = version;
     if (el.footerVersion) el.footerVersion.textContent = version;
-  }
-
-  /**
-   * Check if terms have been accepted
-   */
-  async function checkTermsAccepted() {
-    const result = await chrome.storage.local.get(KEYS.TERMS_ACCEPTED);
-    if (!result[KEYS.TERMS_ACCEPTED]) {
-      el.termsOverlay.classList.remove('hidden');
-    }
   }
 
   /**
@@ -573,24 +559,37 @@
   }
 
   /**
+   * Setup FAQ toggle functionality
+   */
+  function setupFaqToggle() {
+    const faqQuestions = $$('.faq-question');
+    faqQuestions.forEach((question) => {
+      question.addEventListener('click', () => {
+        const item = question.closest('.faq-item');
+        item.classList.toggle('open');
+      });
+    });
+  }
+
+  /**
    * Setup event listeners
    */
   function setupEventListeners() {
-    // Terms acceptance
-    el.termsNameInput.addEventListener('input', () => {
-      el.acceptTermsBtn.disabled = el.termsNameInput.value.trim().length === 0;
-    });
-
-    el.acceptTermsBtn.addEventListener('click', async () => {
-      const name = el.termsNameInput.value.trim();
-      if (name) {
-        await chrome.storage.local.set({
-          [KEYS.TERMS_ACCEPTED]: true,
-          [KEYS.USER_NAME]: name,
-        });
-        el.termsOverlay.classList.add('hidden');
-        await loadUserProfile();
-        showToast('Welcome to McGraw Plus!');
+    // Profile button - navigate to settings > advanced > profile
+    el.profileBtn.addEventListener('click', () => {
+      switchView('settings');
+      // Switch to advanced tab
+      $$('.tab').forEach((t) => t.classList.remove('active'));
+      $$('.tab-content').forEach((c) => c.classList.remove('active'));
+      const advancedTab = document.querySelector('[data-tab="advanced"]');
+      const advancedContent = $('tab-advanced');
+      if (advancedTab && advancedContent) {
+        advancedTab.classList.add('active');
+        advancedContent.classList.add('active');
+        // Focus the profile name input
+        setTimeout(() => {
+          el.profileName?.focus();
+        }, 100);
       }
     });
 

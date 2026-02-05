@@ -18,17 +18,22 @@
     observer: null,
     courses: [],
     assignments: [],
+    tabCoordinatorId: null,
+    retryCount: 0,
 
     // Config
     SCAN_DEBOUNCE_MS: 1000,
     MIN_SCAN_INTERVAL_MS: 5000,
+    MAX_RETRY_COUNT: 3,
+    RETRY_DELAY_MS: 2000,
     STORAGE_KEY: 'mp_due_dates',
     COURSES_KEY: 'mp_courses',
     USER_PROFILE_KEY: 'mp_user_profile',
+    TAB_COORDINATOR_KEY: 'mp_active_scraper_tab',
 
-    // Selectors for McGraw-Hill Connect
+    // Selectors for McGraw-Hill Connect (including newconnect)
     SELECTORS: {
-      // User profile selectors
+      // User profile selectors (expanded for newconnect sidebar)
       userProfile: [
         '.cui-user-menu .user-name',
         '.profile-name',
@@ -36,9 +41,19 @@
         '.mhe-account-name',
         '.student-name',
         '[data-testid="user-name"]',
+        '[data-testid="user-profile-name"]',
         '.account-name',
         '.user-display-name',
         '.header-user-name',
+        // newconnect sidebar selectors
+        '.nav-sidebar .user-name',
+        '.sidebar-profile .name',
+        '.sidebar-user-name',
+        '.nav-user-name',
+        '[class*="UserMenu"] [class*="name"]',
+        '[class*="profile"] [class*="name"]',
+        '.user-info .name',
+        '.user-menu-name',
       ],
 
       // Dashboard course cards
@@ -97,14 +112,26 @@
         return;
       }
 
+      // Generate unique tab ID
+      this.tabCoordinatorId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Check if another tab is already scraping this domain
+      const canScrape = await this.acquireScraperLock();
+      if (!canScrape) {
+        console.log('[McGraw Plus] Another tab is scraping, skipping initialization');
+        // Still load cached data for display
+        await this.loadCachedData();
+        return;
+      }
+
       this.isInitialized = true;
-      console.log('[McGraw Plus] Assignment scraper initializing...');
+      console.log('[McGraw Plus] Assignment scraper initializing...', this.getPageType());
 
       // Load cached data first for instant display
       await this.loadCachedData();
 
-      // Initial scan
-      await this.scan();
+      // Initial scan with retry logic
+      await this.scanWithRetry();
 
       // Set up MutationObserver for dynamic content
       this.setupObserver();
@@ -112,7 +139,102 @@
       // Set up navigation listener for SPA navigation
       this.setupNavigationListener();
 
+      // Set up visibility change listener
+      this.setupVisibilityListener();
+
+      // Release lock on page unload
+      window.addEventListener('beforeunload', () => this.releaseScraperLock());
+
       console.log('[McGraw Plus] Assignment scraper ready');
+    },
+
+    /**
+     * Acquire scraper lock for multi-tab coordination
+     */
+    async acquireScraperLock() {
+      try {
+        const domain = window.location.hostname;
+        const lockKey = `${this.TAB_COORDINATOR_KEY}_${domain}`;
+
+        const result = await chrome.storage.local.get(lockKey);
+        const existingLock = result[lockKey];
+
+        // Check if lock is stale (older than 30 seconds)
+        if (existingLock && Date.now() - existingLock.timestamp < 30000) {
+          // Another tab has the lock
+          return false;
+        }
+
+        // Acquire lock
+        await chrome.storage.local.set({
+          [lockKey]: {
+            tabId: this.tabCoordinatorId,
+            timestamp: Date.now(),
+          },
+        });
+
+        // Start heartbeat to keep lock alive
+        this.lockHeartbeat = setInterval(async () => {
+          await chrome.storage.local.set({
+            [lockKey]: {
+              tabId: this.tabCoordinatorId,
+              timestamp: Date.now(),
+            },
+          });
+        }, 10000);
+
+        return true;
+      } catch (error) {
+        console.error('[McGraw Plus] Lock acquisition error:', error);
+        return true; // Proceed anyway on error
+      }
+    },
+
+    /**
+     * Release scraper lock
+     */
+    async releaseScraperLock() {
+      try {
+        if (this.lockHeartbeat) {
+          clearInterval(this.lockHeartbeat);
+        }
+        const domain = window.location.hostname;
+        const lockKey = `${this.TAB_COORDINATOR_KEY}_${domain}`;
+        await chrome.storage.local.remove(lockKey);
+      } catch (error) {
+        // Ignore errors on unload
+      }
+    },
+
+    /**
+     * Setup visibility change listener
+     */
+    setupVisibilityListener() {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          // Refresh data when tab becomes visible
+          this.lastScanTime = 0;
+          setTimeout(() => this.scan(), 500);
+        }
+      });
+    },
+
+    /**
+     * Scan with retry logic
+     */
+    async scanWithRetry() {
+      try {
+        await this.scan();
+        this.retryCount = 0;
+      } catch (error) {
+        console.error('[McGraw Plus] Scan error:', error);
+        if (this.retryCount < this.MAX_RETRY_COUNT) {
+          this.retryCount++;
+          const delay = this.RETRY_DELAY_MS * Math.pow(2, this.retryCount - 1);
+          console.log(`[McGraw Plus] Retrying in ${delay}ms (attempt ${this.retryCount})`);
+          setTimeout(() => this.scanWithRetry(), delay);
+        }
+      }
     },
 
     /**
@@ -121,7 +243,47 @@
     isConnectPage() {
       const url = window.location.href;
       return url.includes('connect.mheducation.com') ||
-             url.includes('learning.mheducation.com');
+             url.includes('learning.mheducation.com') ||
+             url.includes('newconnect.mheducation.com') ||
+             url.includes('connect.router.integration.prod.mheducation.com');
+    },
+
+    /**
+     * Detect the page type for better scraping
+     */
+    getPageType() {
+      const url = window.location.href.toLowerCase();
+      const path = window.location.pathname.toLowerCase();
+
+      // newconnect pages
+      if (url.includes('newconnect.mheducation.com')) {
+        if (path.includes('/student/todo')) return 'newconnect-todo';
+        if (path.includes('/student/calendar')) return 'newconnect-calendar';
+        if (path.includes('/student/class/section')) return 'newconnect-class';
+        if (path.includes('/student/results')) return 'newconnect-results';
+        return 'newconnect-dashboard';
+      }
+
+      // router integration pages
+      if (url.includes('connect.router.integration.prod.mheducation.com')) {
+        if (path.includes('/coversheet')) return 'router-coversheet';
+        return 'router-page';
+      }
+
+      // Legacy connect pages
+      if (url.includes('/connect/')) {
+        if (path.includes('/home')) return 'connect-home';
+        if (path.includes('/section')) return 'connect-section';
+        if (path.includes('/course')) return 'connect-course';
+        return 'connect-dashboard';
+      }
+
+      // SmartBook pages
+      if (url.includes('learning.mheducation.com')) {
+        return 'smartbook';
+      }
+
+      return 'unknown';
     },
 
     /**
@@ -297,30 +459,82 @@
      * Scan for user profile information
      */
     scanUserProfile() {
+      // Try all profile selectors
       for (const selector of this.SELECTORS.userProfile) {
-        const el = document.querySelector(selector);
-        if (el && el.textContent.trim()) {
-          const name = el.textContent.trim();
-          // Basic validation - name should be reasonable length
-          if (name.length >= 2 && name.length <= 100) {
-            return {
-              name,
-              scrapedAt: Date.now(),
-            };
+        try {
+          const el = document.querySelector(selector);
+          if (el && el.textContent.trim()) {
+            const name = el.textContent.trim();
+            // Basic validation - name should be reasonable length and not be a button/link text
+            if (name.length >= 2 && name.length <= 100 && !this.isCommonUIText(name)) {
+              return {
+                name,
+                scrapedAt: Date.now(),
+                source: 'selector',
+              };
+            }
           }
+        } catch (e) {
+          // Ignore invalid selectors
         }
       }
 
       // Try alternate method: look in meta tags or data attributes
-      const metaUser = document.querySelector('meta[name="user-name"], meta[property="user:name"]');
-      if (metaUser && metaUser.content) {
-        return {
-          name: metaUser.content.trim(),
-          scrapedAt: Date.now(),
-        };
+      const metaSelectors = [
+        'meta[name="user-name"]',
+        'meta[property="user:name"]',
+        'meta[name="user"]',
+        '[data-user-name]',
+        '[data-username]',
+      ];
+
+      for (const selector of metaSelectors) {
+        try {
+          const el = document.querySelector(selector);
+          const value = el?.content || el?.dataset?.userName || el?.dataset?.username;
+          if (value && value.trim().length >= 2) {
+            return {
+              name: value.trim(),
+              scrapedAt: Date.now(),
+              source: 'meta',
+            };
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
+
+      // Try looking for first/last name combination
+      const firstNameEl = document.querySelector('[data-first-name], .first-name, .given-name');
+      const lastNameEl = document.querySelector('[data-last-name], .last-name, .family-name');
+
+      if (firstNameEl || lastNameEl) {
+        const firstName = firstNameEl?.textContent?.trim() || '';
+        const lastName = lastNameEl?.textContent?.trim() || '';
+        const fullName = `${firstName} ${lastName}`.trim();
+
+        if (fullName.length >= 2) {
+          return {
+            name: fullName,
+            scrapedAt: Date.now(),
+            source: 'combined',
+          };
+        }
       }
 
       return null;
+    },
+
+    /**
+     * Check if text is common UI text (not a name)
+     */
+    isCommonUIText(text) {
+      const commonTexts = [
+        'sign in', 'sign out', 'log in', 'log out', 'login', 'logout',
+        'menu', 'profile', 'account', 'settings', 'home', 'dashboard',
+        'courses', 'assignments', 'grades', 'help', 'support',
+      ];
+      return commonTexts.includes(text.toLowerCase());
     },
 
     /**

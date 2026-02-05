@@ -34,8 +34,8 @@ body {
   color: var(--text);
   width: 320px;
   min-height: 100px;
-  max-height: 500px;
-  overflow: hidden;
+  max-height: 520px;
+  overflow-y: auto;
 }
 
 #popup {
@@ -112,7 +112,7 @@ header {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .icon-btn {
@@ -145,7 +145,7 @@ header {
 /* Views Container */
 .views-container {
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .view {
@@ -843,6 +843,108 @@ kbd {
 
 .reset-section .btn:last-child {
   margin-bottom: 0;
+}
+
+/* FAQ Accordion */
+.faq-item {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.faq-question:hover {
+  background: var(--bg-tertiary);
+}
+
+.faq-chevron {
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+
+.faq-item.open .faq-chevron {
+  transform: rotate(180deg);
+}
+
+.faq-answer {
+  display: none;
+  padding: 0 14px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.faq-item.open .faq-answer {
+  display: block;
+}
+
+/* Quick Links Grid */
+.quick-links {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.quick-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 12px;
+  transition: background var(--transition);
+}
+
+.quick-link:hover {
+  background: var(--bg-tertiary);
+}
+
+.quick-link svg {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+/* Help Footer */
+.help-footer {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 14px;
+  text-align: center;
+}
+
+.help-footer p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.help-footer-links {
+  display: flex;
+  gap: 8px;
+}
+
+.help-footer-links .btn {
+  flex: 1;
 }
 
 /* Footer */
