@@ -1,18 +1,6 @@
 let answerMap = {};
 let highlighterIntervalId = null;
 
-// Shorthand references to config (loaded from config.js)
-const Log = () => window.SBS_Logger || console;
-const Cfg = () => window.SBS_CONFIG || { DEV_MODE: false };
-
-function normalizeQuestionKey(rawQuestion) {
-    // Normalize question to prevent key mismatches (must match contentSolver.js)
-    return rawQuestion
-        .replace(/\s+/g, ' ')
-        .replace(/\s*_____\s*/g, '_____')
-        .trim();
-}
-
 function hasAnsweredQuestion(question) {
     return Object.prototype.hasOwnProperty.call(answerMap, question);
 }
@@ -52,7 +40,7 @@ function displayText(ans) {
     if (check) {
         return;
     }
-    Log().debug("Overlay: Displaying answer:", ans);
+    console.log("H: Displaying answer:", ans);
 
     var div = document.createElement('div');
 
@@ -83,7 +71,7 @@ function displayText(ans) {
     if (containerEl.length === 0) {
         containerEl = document.querySelectorAll('.dlc_question');
         if (containerEl.length === 0) {
-            Log().debug("Overlay: No container found for answer display");
+            console.log("H: No container");
             return;
         }
     }
@@ -97,8 +85,7 @@ function highlighter() {
         const paragraphElement = questionElement[0].querySelector('p');
         if (!paragraphElement) return;
         const textNodes = [...paragraphElement.childNodes].filter(node => node.nodeType === Node.TEXT_NODE);
-        const rawQuestion = textNodes.map(node => node.textContent).join('_____');
-        question = normalizeQuestionKey(rawQuestion);
+        question = textNodes.map(node => node.textContent).join('_____');
         if (hasAnsweredQuestion(question) && document.getElementsByClassName("answer-container").length == 0) {
             highlightAnswers(question);
             return;

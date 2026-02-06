@@ -3,220 +3,104 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>SmartBook Solver</title>
+    <title>Important Info (Read Me)</title>
     <link href="styles.css" rel="stylesheet" />
   </head>
   <body>
     <div id="solver-popup">
-      <!-- 1. DISCLAIMER SCREEN (Initially Visible for new users) -->
-      <div id="disclaimer-screen">
+      <!-- 1. READ ME SCREEN (Initially Visible) -->
+      <div id="readme-screen">
         <header>
-          <h1>Important Notice</h1>
+          <h1>Important Info (Read Me)</h1>
         </header>
         <div class="content">
-          <div class="disclaimer-box">
+          <div class="disclaimer-text">
             <p>
-              This tool is for <strong>educational purposes only</strong> to
-              demonstrate platform vulnerabilities. The developer
-              <strong>does not endorse academic dishonesty</strong>.
+              This tool was built strictly for
+              <strong>educational purposes</strong> only and to demonstrate the
+              vulnerabilities of certain online platforms. The developer
+              <strong>does not encourage or endorse academic dishonesty</strong>
+              or the violation of institutional policies.
             </p>
             <p>
-              By continuing, you acknowledge that you are
-              <strong>solely responsible</strong> for any consequences from
-              using this tool.
+              By continuing and using this software, you
+              <strong>acknowledge and agree</strong> that the developer is
+              <strong>not liable</strong> for any consequences, academic
+              penalties, or damages resulting from your use of this tool. You
+              are solely responsible for adhering to your institution's rules.
             </p>
           </div>
 
           <div class="agreement-check">
             <input type="checkbox" id="agree-checkbox" />
-            <label for="agree-checkbox">I understand and accept responsibility</label>
+            <label for="agree-checkbox"
+              >I agree and acknowledge the developer's non-liability.</label
+            >
           </div>
 
-          <button id="continue-btn" disabled>Continue</button>
+          <button id="continue-button" disabled>Continue to Solver</button>
         </div>
       </div>
 
-      <!-- 2. MAIN SCREEN - Minimal Design -->
+      <!-- 2. MAIN SOLVER SCREEN (Initially Hidden, Shown After Agreement) -->
       <div id="main-screen" style="display: none">
-        <!-- Compact Header -->
-        <header class="minimal-header">
-          <span class="header-title">SmartBook Solver</span>
-          <span class="header-version" id="version-display">v4.1.0</span>
+        <header>
+          <h1 id="main-header-title"></h1>
         </header>
-
-        <!-- Update Banner -->
-        <div id="update-banner" style="display: none">
-          <span id="update-text">Update available</span>
-          <div class="update-actions">
-            <a id="update-link" href="#" target="_blank">Download</a>
-            <button id="update-dismiss" title="Dismiss">&times;</button>
-          </div>
-        </div>
-
-        <!-- Status + Toggle (Always Visible) -->
-        <div id="status-row">
-          <div id="status-indicator" class="inactive">
-            <span class="status-dot"></span>
-            <span class="status-label">INACTIVE</span>
-          </div>
-          <button id="toggle-btn" disabled>
-            <span class="btn-text">Activate</span>
-          </button>
-        </div>
-        <p class="hint-text" id="hint-text">Checking status...</p>
-
-        <!-- Quick Stats (Always Visible) -->
-        <div id="quick-stats">
-          <div class="qs-item">
-            <span class="qs-value" id="stat-questions">0</span>
-            <span class="qs-label">Questions</span>
-          </div>
-          <div class="qs-item">
-            <span class="qs-value correct" id="stat-correct">0</span>
-            <span class="qs-label">Correct</span>
-          </div>
-          <div class="qs-item">
-            <span class="qs-value learned" id="stat-learned">0</span>
-            <span class="qs-label">Learned</span>
-          </div>
-        </div>
-
-        <!-- Settings Accordion -->
-        <div id="settings-accordion">
-          <!-- Webhook Section -->
-          <div class="accordion-section">
-            <button class="accordion-trigger" data-section="webhook">
-              <span>Discord Webhook</span>
-              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </button>
-            <div class="accordion-content" id="section-webhook">
-              <p class="setting-desc">Receive notifications when sessions start/end</p>
-              <input type="text" id="webhook-url" placeholder="https://discord.com/api/webhooks/..." class="text-input" />
-              <div class="btn-row">
-                <button id="save-webhook-btn" class="sm-btn">Save</button>
-                <button id="test-webhook-btn" class="sm-btn">Test</button>
-              </div>
+        <div class="content">
+          <!-- Update Banner (hidden by default) -->
+          <div id="update-banner" style="display: none">
+            <span id="update-text"></span>
+            <div class="update-actions">
+              <a id="update-link" href="#" target="_blank">Download</a>
+              <button id="update-dismiss" title="Dismiss">Dismiss</button>
             </div>
           </div>
 
-          <!-- AI Section -->
-          <div class="accordion-section">
-            <button class="accordion-trigger" data-section="ai">
-              <span>AI Assistant</span>
-              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </button>
-            <div class="accordion-content" id="section-ai">
-              <p class="setting-desc">Use AI to answer unknown questions</p>
-              <label class="toggle-row">
-                <input type="checkbox" id="llm-enabled" />
-                <span class="toggle-slider"></span>
-                <span>Enable AI</span>
-              </label>
-              <select id="llm-provider" class="select-input">
-                <option value="groq">Groq (Free)</option>
-                <option value="openai">OpenAI</option>
-                <option value="anthropic">Anthropic</option>
-              </select>
-              <input type="password" id="llm-api-key" placeholder="API key..." class="text-input" />
-              <div class="btn-row">
-                <button id="save-llm-btn" class="sm-btn">Save</button>
-                <button id="test-llm-btn" class="sm-btn">Test</button>
-              </div>
-            </div>
+          <div class="bot-header-description">
+            <p>
+              Automatically solves McGrawHill SmartBook concept questions. Built
+              for educational purposes only. Use at your own discretion.
+            </p>
           </div>
+          <p id="status-message">
+            Bot Status: <strong>Checking Storage...</strong>
+          </p>
+          <button id="toggle-bot" disabled>Toggle Bot</button>
 
-          <!-- Options Section -->
-          <div class="accordion-section">
-            <button class="accordion-trigger" data-section="options">
-              <span>Options</span>
-              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </button>
-            <div class="accordion-content" id="section-options">
-              <label class="toggle-row">
-                <input type="checkbox" id="anti-copy-enabled" />
-                <span class="toggle-slider"></span>
-                <span>Enable Copy/Select</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Debug Section (DEV_MODE only) -->
-          <div class="accordion-section" id="debug-section" style="display: none;">
-            <button class="accordion-trigger" data-section="debug">
-              <span>Debug</span>
-              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </button>
-            <div class="accordion-content" id="section-debug">
-              <div class="debug-stats-row">
-                <span>Q&A Entries:</span>
-                <span id="debug-qa-count">0</span>
-              </div>
-              <div class="debug-stats-row">
-                <span>Storage:</span>
-                <span id="debug-storage-size">0 KB</span>
-              </div>
-              <input type="text" id="debug-search" placeholder="Search questions..." class="text-input" />
-              <div id="debug-qa-list" class="debug-qa-list"></div>
-              <div class="btn-row">
-                <button id="debug-export-btn" class="sm-btn">Export</button>
-                <button id="debug-clear-btn" class="sm-btn danger">Clear</button>
-              </div>
-              <label class="toggle-row" style="margin-top: 8px;">
-                <input type="checkbox" id="debug-overlay-enabled" />
-                <span class="toggle-slider"></span>
-                <span>Debug Overlay</span>
-              </label>
-            </div>
-          </div>
+          <p class="toggle-hint-text">
+            If the on/off button doesn't work, refresh the SmartBook site and
+            try again.
+          </p>
         </div>
 
-        <!-- Star CTA -->
-        <div id="star-cta">
-          <div class="star-cta-header">
-            <span class="star-icon">&#9733;</span>
-            <span>Support the Project</span>
-            <span class="star-badge" id="star-badge" style="display: none;">Verified</span>
-          </div>
-          <div id="star-status" class="star-status">
-            <span class="star-text">Not verified</span>
-          </div>
-          <input type="text" id="github-username" placeholder="GitHub username" class="text-input" />
-          <div class="btn-row">
-            <button id="verify-star-btn" class="sm-btn">Verify</button>
-            <a href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver" target="_blank" class="sm-btn star-link">
-              <span class="star-icon-btn">&#9733;</span> Star Repo
-            </a>
-          </div>
+        <div class="action-bar">
+          <a
+            href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver/releases/latest/download/McGraw-Hill-SmartBook-Solver.zip"
+            target="_blank"
+            id="download-extension"
+            class="action-button"
+          >
+            Download Extension
+          </a>
+          <a
+            href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver#installation-and-usage-guide"
+            target="_blank"
+            id="how-to-use"
+            class="action-button"
+          >
+            How To Use
+          </a>
         </div>
 
-        <!-- Hidden elements for stats tab compatibility -->
-        <div style="display: none;">
-          <span id="lifetime-questions">0</span>
-          <span id="lifetime-correct">0</span>
-          <span id="lifetime-learned">0</span>
-          <span id="lifetime-accuracy">0%</span>
-          <span id="lifetime-sessions">0</span>
-          <span id="lifetime-time">0m</span>
-          <span id="type-mc">0</span>
-          <span id="type-fib">0</span>
-          <span id="type-dnd">0</span>
-          <button id="reset-stats-btn"></button>
-          <button id="settings-btn"></button>
-          <div id="premium-features"></div>
+        <div class="footer">
+          <p class="developer-info">
+            <span id="version-display"></span>
+            <a href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver" target="_blank"
+              >GitHub</a
+            >
+          </p>
         </div>
-
-        <!-- Footer -->
-        <footer>
-          <span style="color: var(--text-muted);">SmartBook Solver</span>
-        </footer>
       </div>
     </div>
     <script src="index.js"></script>

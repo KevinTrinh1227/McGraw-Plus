@@ -1,196 +1,306 @@
-/* SmartBook Solver v4.1.0 - Minimal UI */
-
 /* ---------- Theme Variables ---------- */
 :root {
-  --bg-primary: #0f0f0f;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #222222;
-  --bg-hover: #2a2a2a;
-
-  --text-primary: #ffffff;
-  --text-secondary: #a0a0a0;
-  --text-muted: #666666;
-
-  --accent: #6366f1;
-  --accent-hover: #818cf8;
-  --accent-glow: rgba(99, 102, 241, 0.25);
-
-  --success: #22c55e;
-  --success-bg: rgba(34, 197, 94, 0.1);
-  --error: #ef4444;
-  --error-bg: rgba(239, 68, 68, 0.1);
-  --warning: #f59e0b;
-  --learned: #3b82f6;
-
+  --bg: #121212; /* Very dark background */
+  --bg-secondary: #1c1c1c; /* Slightly lighter background for cards/sections */
+  --text: #eaeaea; /* Light text */
+  --text-muted: #a0a0a0; /* Muted text for secondary info */
+  --accent: #64b5f6; /* Baby blue accent */
+  --accent-hover: #90caf9; /* Lighter baby blue for hover */
+  --active-color: #4caf50; /* Green for Active status */
+  --inactive-color: #f44336; /* Red for Inactive status */
   --border: #2a2a2a;
-  --border-light: #333333;
-
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-full: 9999px;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-
-  --transition-fast: 0.15s ease;
-  --transition: 0.2s ease;
+  --radius: 8px;
+  --transition: 0.3s ease;
 }
 
 /* ---------- Global Styles ---------- */
-* {
-  box-sizing: border-box;
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
   margin: 0;
   padding: 0;
+  width: 320px; /* Increased width slightly to accommodate inline buttons */
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  width: 300px;
-  font-size: 13px;
-  line-height: 1.4;
-  overflow: hidden;
-}
-
+/* Container for the entire popup */
 #solver-popup {
-  padding: 14px;
+  padding: 15px;
+  box-sizing: border-box;
 }
 
-/* ---------- Disclaimer Screen ---------- */
-#disclaimer-screen {
+/* Header and Title */
+header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+  margin-bottom: 15px;
   text-align: center;
 }
 
-#disclaimer-screen header {
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-#disclaimer-screen h1 {
-  font-size: 15px;
+h1 {
+  font-size: 1.2em;
   font-weight: 600;
+  color: var(--accent);
+  margin: 0;
 }
 
-.disclaimer-box {
-  background: var(--bg-secondary);
+/* Status Message */
+#status-message {
+  font-size: 0.95em;
+  font-weight: 500;
+  margin-bottom: 15px;
+  padding: 5px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+/* Toggle Button Styling */
+#toggle-bot {
+  width: 100%;
+  padding: 10px 15px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1em;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* Active State (Button to Deactivate - remains Red) */
+#toggle-bot.inactive {
+  background-color: var(--inactive-color);
+  color: var(--text);
+}
+
+#toggle-bot.inactive:hover:not([disabled]) {
+  background-color: #e53935; /* Darker red */
+}
+
+/* Inactive State (Button to Activate - Baby Blue Accent) */
+#toggle-bot.active {
+  background-color: var(--accent); /* Now baby blue */
+  color: var(--bg); /* Dark text for contrast */
+}
+
+#toggle-bot.active:hover:not([disabled]) {
+  background-color: var(--accent-hover);
+}
+
+/* Disabled State */
+#toggle-bot[disabled] {
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ---------- NEW ACTION BAR STYLES ---------- */
+.action-bar {
+  display: flex; /* Arrange items horizontally */
+  justify-content: space-between; /* Space them out */
+  gap: 8px; /* Gap between buttons */
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.action-button {
+  flex: 1; /* Make both buttons equal width */
+  text-decoration: none; /* Remove underline from link */
+  text-align: center;
+  padding: 8px 5px;
+  border: none; /* Removed border */
+  border-radius: var(--radius);
+  font-size: 0.85em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+
+  /* UPDATED: Background to secondary dark, text to light text */
+  background-color: var(--bg-secondary);
+  color: var(--text);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); /* Subtle shadow */
+}
+
+.action-button:hover {
+  background-color: var(--bg); /* Darker on hover */
+  color: var(--text); /* Keep text light */
+  /* Added a subtle lift/glow effect on hover using accent for the glow */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.8), 0 0 5px rgba(100, 181, 246, 0.5); /* Soft baby blue glow */
+}
+/* ------------------------------------------- */
+
+/* Footer (Muted Text) */
+.footer {
+  margin-top: 10px; /* Reduced margin since action bar has padding */
+  text-align: center;
+}
+
+.footer p {
+  font-size: 0.8em;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Styling the footer anchor link */
+.developer-info a {
+  color: var(--accent); /* Baby blue accent */
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.developer-info a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* Bolding within status message */
+#status-message strong {
+  font-weight: 700;
+  color: var(--accent); /* Highlight the main status text */
+}
+
+/* Description Styling for smaller font */
+.bot-header-description p {
+  /* Targeted the new header description element */
+  font-size: 0.8em;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 5px 0 0 0; /* Adjusted margin to fit below the main header */
+  padding: 0 5px;
+  text-align: center; /* Center alignment for description text */
+}
+
+/* Header icon styling */
+.header-logo {
+  height: 24px;
+  width: 24px;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+/* ---------- READ ME SCREEN STYLES ---------- */
+#readme-screen {
+  /* Ensures the readme takes up the full space */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.disclaimer-text {
+  background-color: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius);
   padding: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 20px;
   text-align: left;
+  color: var(--text); /* Set base text color to standard light text */
 }
 
-.disclaimer-box p {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
+.disclaimer-text p {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 0.85em;
+  line-height: 1.4;
 }
 
-.disclaimer-box p:last-child {
+.disclaimer-text p:last-child {
   margin-bottom: 0;
-}
-
-.disclaimer-box strong {
-  color: var(--text-primary);
+  font-weight: 500;
+  /* Removed the color: var(--accent); rule here so it inherits the standard text color */
 }
 
 .agreement-check {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 14px;
-  font-size: 12px;
-  color: var(--text-secondary);
+  margin-bottom: 15px;
+  font-size: 0.9em;
+  color: var(--text);
 }
 
 .agreement-check input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  margin-right: 10px;
+  height: 18px;
+  width: 18px;
   cursor: pointer;
-  accent-color: var(--accent);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
 }
 
-#continue-btn {
+/* Continue Button (Enabled) */
+#continue-button {
   width: 100%;
-  padding: 10px;
-  background: var(--accent);
-  color: white;
+  padding: 10px 15px;
   border: none;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: var(--radius);
+  font-size: 1em;
+  font-weight: 700;
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: var(--transition);
+  background-color: var(--accent); /* Changed to baby blue accent */
+  color: var(--bg); /* Using dark text for contrast on accent */
 }
 
-#continue-btn:hover:not(:disabled) {
-  background: var(--accent-hover);
+#continue-button:hover:not([disabled]) {
+  background-color: var(--accent-hover);
 }
 
-#continue-btn:disabled {
-  background: var(--bg-tertiary);
+/* Continue Button (Disabled) */
+#continue-button:disabled {
+  background-color: var(--bg-secondary);
   color: var(--text-muted);
   cursor: not-allowed;
+  box-shadow: none;
 }
 
-/* ---------- Minimal Header ---------- */
-.minimal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-.minimal-header .header-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.minimal-header .header-version {
-  font-size: 11px;
+.toggle-hint-text {
+  font-size: 0.75rem;
   color: var(--text-muted);
-  font-weight: 500;
+  text-align: center;
+  margin-top: 5px;
+  margin-bottom: 0;
 }
 
-/* ---------- Update Banner ---------- */
+/* ---------- UPDATE BANNER STYLES ---------- */
 #update-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.04));
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  border-radius: var(--radius-md);
-  padding: 8px 10px;
+  background-color: #1b2e1b;
+  border: 1px solid #4caf50;
+  border-radius: var(--radius);
+  padding: 8px 12px;
   margin-bottom: 10px;
-  font-size: 12px;
+  font-size: 0.82em;
+  color: #c8e6c9;
 }
 
-#update-text {
-  color: var(--success);
-  font-weight: 500;
+#update-banner #update-text {
+  flex: 1;
+  font-weight: 600;
 }
 
 .update-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  margin-left: 8px;
 }
 
 .update-actions a {
-  color: var(--success);
+  color: #81c784;
   text-decoration: none;
   font-weight: 600;
+  font-size: 0.9em;
 }
 
 .update-actions a:hover {
   text-decoration: underline;
+  color: #a5d6a7;
 }
 
 .update-actions button {
@@ -198,594 +308,10 @@ body {
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 14px;
-  padding: 0 2px;
+  font-size: 0.85em;
+  padding: 2px 4px;
 }
 
 .update-actions button:hover {
-  color: var(--text-primary);
-}
-
-/* ---------- Status Row ---------- */
-#status-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-#status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-#status-indicator .status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  transition: var(--transition);
-}
-
-#status-indicator.inactive .status-dot {
-  background: var(--text-muted);
-}
-
-#status-indicator.active .status-dot {
-  background: var(--success);
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
-  animation: pulse-dot 1.5s infinite;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.15); opacity: 0.8; }
-}
-
-.status-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-#status-indicator.inactive .status-label {
-  color: var(--text-muted);
-}
-
-#status-indicator.active .status-label {
-  color: var(--success);
-}
-
-#toggle-btn {
-  flex: 1;
-  max-width: 120px;
-  padding: 8px 14px;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-#toggle-btn:not(:disabled) {
-  background: var(--accent);
-  color: white;
-}
-
-#toggle-btn:not(:disabled):hover {
-  background: var(--accent-hover);
-}
-
-#toggle-btn:disabled {
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
-  cursor: not-allowed;
-}
-
-#toggle-btn.active {
-  background: var(--error);
-}
-
-#toggle-btn.active:hover {
-  background: #dc2626;
-}
-
-.hint-text {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-/* ---------- Quick Stats ---------- */
-#quick-stats {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  padding: 10px 8px;
-  margin-bottom: 10px;
-}
-
-.qs-item {
-  text-align: center;
-}
-
-.qs-value {
-  display: block;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
-}
-
-.qs-value.correct {
-  color: var(--success);
-}
-
-.qs-value.learned {
-  color: var(--learned);
-}
-
-.qs-label {
-  font-size: 10px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-/* ---------- Settings Accordion ---------- */
-#settings-accordion {
-  margin-bottom: 10px;
-}
-
-.accordion-section {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  margin-bottom: 6px;
-  overflow: hidden;
-}
-
-.accordion-section:last-child {
-  margin-bottom: 0;
-}
-
-.accordion-trigger {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-.accordion-trigger:hover {
-  background: var(--bg-tertiary);
-}
-
-.accordion-trigger .chevron {
-  color: var(--text-muted);
-  transition: transform var(--transition);
-}
-
-.accordion-section.open .accordion-trigger .chevron {
-  transform: rotate(180deg);
-}
-
-.accordion-content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.25s ease;
-}
-
-.accordion-section.open .accordion-content {
-  max-height: 400px;
-}
-
-.accordion-content > * {
-  padding-left: 12px;
-  padding-right: 12px;
-}
-
-.accordion-content > *:first-child {
-  padding-top: 4px;
-}
-
-.accordion-content > *:last-child {
-  padding-bottom: 12px;
-}
-
-.setting-desc {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-  padding-top: 0 !important;
-}
-
-/* ---------- Form Elements ---------- */
-.text-input {
-  width: calc(100% - 24px);
-  padding: 8px 10px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-size: 12px;
-  transition: var(--transition-fast);
-  margin-bottom: 8px;
-}
-
-.text-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-glow);
-}
-
-.text-input::placeholder {
-  color: var(--text-muted);
-}
-
-.select-input {
-  width: calc(100% - 24px);
-  padding: 8px 10px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  margin-bottom: 8px;
-}
-
-.select-input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.btn-row {
-  display: flex;
-  gap: 6px;
-}
-
-.sm-btn {
-  flex: 1;
-  padding: 7px 12px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--transition-fast);
-  text-decoration: none;
-  text-align: center;
-}
-
-.sm-btn:hover {
-  background: var(--bg-hover);
-  border-color: var(--border-light);
-}
-
-.sm-btn.danger {
-  color: var(--error);
-}
-
-.sm-btn.danger:hover {
-  background: var(--error-bg);
-  border-color: var(--error);
-}
-
-/* Toggle Row */
-.toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-}
-
-.toggle-row input {
-  display: none;
-}
-
-.toggle-slider {
-  width: 34px;
-  height: 18px;
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-full);
-  position: relative;
-  transition: var(--transition-fast);
-  border: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.toggle-slider::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  background: var(--text-muted);
-  border-radius: 50%;
-  transition: var(--transition-fast);
-}
-
-.toggle-row input:checked + .toggle-slider {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.toggle-row input:checked + .toggle-slider::after {
-  transform: translateX(16px);
-  background: white;
-}
-
-/* ---------- Star CTA ---------- */
-#star-cta {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  padding: 12px;
-  margin-bottom: 10px;
-}
-
-.star-cta-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.star-cta-header .star-icon {
-  color: #fbbf24;
-  font-size: 14px;
-}
-
-.star-badge {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #000;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: var(--radius-full);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  margin-left: auto;
-}
-
-.star-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-sm);
-  margin-bottom: 8px;
-  font-size: 11px;
-}
-
-.star-status .star-text {
-  color: var(--text-muted);
-}
-
-.star-status.verified {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(245, 158, 11, 0.04));
-  border: 1px solid rgba(251, 191, 36, 0.25);
-}
-
-.star-status.verified .star-text {
-  color: #fbbf24;
-  font-weight: 500;
-}
-
-.star-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-.star-icon-btn {
-  color: #fbbf24;
-}
-
-/* ---------- Debug Section ---------- */
-.debug-stats-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 0;
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.debug-stats-row span:last-child {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.debug-qa-list {
-  max-height: 120px;
-  overflow-y: auto;
-  margin-bottom: 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-tertiary);
-}
-
-.debug-qa-item {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-.debug-qa-item:last-child {
-  border-bottom: none;
-}
-
-.debug-qa-item:hover {
-  background: var(--bg-hover);
-}
-
-.debug-qa-question {
-  font-size: 11px;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 2px;
-}
-
-.debug-qa-answer {
-  font-size: 10px;
-  color: var(--success);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.debug-qa-empty {
-  padding: 16px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 11px;
-}
-
-.debug-qa-detail {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 14px;
-  max-width: 280px;
-  max-height: 80%;
-  overflow-y: auto;
-  z-index: 1000;
-  box-shadow: var(--shadow-md);
-}
-
-.debug-qa-detail-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-}
-
-.debug-qa-detail h4 {
-  font-size: 12px;
-  color: var(--text-primary);
-  margin-bottom: 6px;
-}
-
-.debug-qa-detail pre {
-  font-size: 10px;
-  color: var(--text-secondary);
-  background: var(--bg-tertiary);
-  padding: 8px;
-  border-radius: var(--radius-sm);
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 150px;
-  overflow-y: auto;
-}
-
-.debug-qa-detail .close-btn {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.debug-qa-detail .close-btn:hover {
-  color: var(--text-primary);
-}
-
-/* ---------- Footer ---------- */
-footer {
-  text-align: center;
-  padding-top: 8px;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-/* ---------- Premium Theme ---------- */
-body.premium-theme {
-  --accent: #f59e0b;
-  --accent-hover: #fbbf24;
-  --accent-glow: rgba(245, 158, 11, 0.25);
-}
-
-body.premium-theme #status-indicator.active .status-dot {
-  background: #f59e0b;
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
-}
-
-body.premium-theme #status-indicator.active .status-label {
-  color: #f59e0b;
-}
-
-/* ---------- Legacy Compatibility (Hidden) ---------- */
-.tab-btn,
-.tab-content,
-#tab-bar,
-#tab-main,
-#tab-stats,
-#tab-settings,
-#tab-debug,
-.stats-grid,
-.stats-card,
-.stats-card-header,
-.stats-row,
-.stats-value,
-.settings-section,
-.setting-header,
-.setting-row,
-.secondary-btn,
-.toggle-label,
-.info-card,
-.action-links,
-.action-link,
-.icon-btn,
-.main-header,
-.header-left,
-.header-logo,
-#status-section,
-.status-ring,
-#stats-section,
-.stat-item,
-.stat-value,
-.stat-label,
-.stat-divider,
-.star-section,
-.star-status .star-icon,
-.premium-features,
-.premium-header,
-.premium-list {
-  /* These are kept for any JS that might reference them */
+  color: var(--text);
 }

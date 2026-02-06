@@ -1,106 +1,35 @@
 {
-  "manifest_version": 3,
-  "name": "McGraw Plus",
-  "version": "2.5.0",
-  "description": "A study companion for McGraw-Hill SmartBook. Features dark mode, keyboard shortcuts, due date tracking, flashcard generation, and more.",
-  "icons": {
-    "16": "assets/icons/icon-16.png",
-    "32": "assets/icons/icon-32.png",
-    "48": "assets/icons/icon-48.png",
-    "128": "assets/icons/icon-128.png"
-  },
   "action": {
-    "default_popup": "popup/popup.html",
-    "default_title": "McGraw Plus"
+    "default_popup": "index.html",
+    "default_title": "Open the popup"
   },
   "background": {
-    "service_worker": "background/service-worker.js",
-    "type": "module"
+    "service_worker": "serviceCore.js"
   },
-  "permissions": [
-    "activeTab",
-    "storage",
-    "scripting",
-    "alarms",
-    "notifications",
-    "clipboardWrite",
-    "contextMenus"
-  ],
-  "commands": {
-    "open-dashboard": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+M",
-        "mac": "Command+Shift+M"
-      },
-      "description": "Open McGraw Plus Dashboard"
-    }
-  },
-  "host_permissions": [
-    "*://learning.mheducation.com/*",
-    "*://connect.mheducation.com/*",
-    "*://newconnect.mheducation.com/*",
-    "*://connect.edu.mheducation.com/*",
-    "*://connect.router.integration.prod.mheducation.com/*",
-    "https://discord.com/api/webhooks/*",
-    "https://api.groq.com/*",
-    "https://api.openai.com/*",
-    "https://api.anthropic.com/*"
-  ],
   "content_scripts": [
     {
-      "matches": [
-        "*://learning.mheducation.com/*",
-        "*://connect.mheducation.com/*",
-        "*://newconnect.mheducation.com/*",
-        "*://connect.edu.mheducation.com/*",
-        "*://connect.router.integration.prod.mheducation.com/*"
-      ],
-      "js": ["content/api-interceptor.js"],
-      "run_at": "document_start",
-      "world": "MAIN"
-    },
-    {
-      "matches": [
-        "*://learning.mheducation.com/*",
-        "*://connect.mheducation.com/*",
-        "*://newconnect.mheducation.com/*",
-        "*://connect.edu.mheducation.com/*",
-        "*://connect.router.integration.prod.mheducation.com/*"
-      ],
-      "js": [
-        "content/api-bridge.js",
-        "shared/utils.js",
-        "shared/storage.js",
-        "shared/messaging.js",
-        "content/assignment-scraper.js",
-        "content/main.js"
-      ],
-      "css": [
-        "content/dark-mode.css",
-        "content/focus-mode.css",
-        "content/progress-bar.css",
-        "content/overlay.css"
-      ],
-      "run_at": "document_end"
+      "js": ["contentSolver.js", "answerOverlay.js"],
+      "matches": ["*://learning.mheducation.com/*"]
     }
   ],
+  "icons": {
+    "128": "logo.png",
+    "16": "logo.png",
+    "48": "logo.png"
+  },
+  "manifest_version": 3,
+  "name": "McGraw-Hill SmartBook Solver",
+  "description": "Automatically interacts with McGraw-Hill SmartBook concept questions (educational use only).",
+  "permissions": ["activeTab", "storage", "scripting", "alarms"],
+  "host_permissions": [
+    "*://learning.mheducation.com/*",
+    "https://api.github.com/*"
+  ],
+  "version": "3.1.2",
   "web_accessible_resources": [
     {
-      "resources": [
-        "content/*.js",
-        "content/*.css",
-        "libs/*.js",
-        "assets/icons/*",
-        "dashboard/*",
-        "shared/*.js"
-      ],
-      "matches": [
-        "*://learning.mheducation.com/*",
-        "*://connect.mheducation.com/*",
-        "*://newconnect.mheducation.com/*",
-        "*://connect.edu.mheducation.com/*",
-        "*://connect.router.integration.prod.mheducation.com/*"
-      ]
+      "resources": ["contentSolver.js"],
+      "matches": ["*://learning.mheducation.com/*"]
     }
   ]
 }
