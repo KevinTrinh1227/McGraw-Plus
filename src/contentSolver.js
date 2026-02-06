@@ -157,6 +157,63 @@ async function simulateDragAndDrop(source, target) {
   await sleep(200);
 }
 
+/**
+ * Detect fill-in-blank question and get input elements
+ * Handles multiple McGraw-Hill FITB variations
+ */
+function detectFillInBlank() {
+  // Type 1: input-container span-to-div (most common)
+  let containers = document.getElementsByClassName("input-container span-to-div");
+  if (containers.length > 0) {
+    const inputs = [];
+    for (let i = 0; i < containers.length; i++) {
+      const input = containers[i].getElementsByTagName("input")[0];
+      if (input) inputs.push(input);
+    }
+    if (inputs.length > 0) {
+      console.log("S: FITB Type 1 (input-container span-to-div):", inputs.length, "blanks");
+      return { isFillBlank: true, blankInputs: inputs, blankType: "input-container" };
+    }
+  }
+
+  // Type 2: fitb-input class
+  let fitbInputs = document.querySelectorAll("input.fitb-input");
+  if (fitbInputs.length > 0) {
+    console.log("S: FITB Type 2 (fitb-input):", fitbInputs.length, "blanks");
+    return { isFillBlank: true, blankInputs: Array.from(fitbInputs), blankType: "fitb-input" };
+  }
+
+  // Type 3: fitb-fieldset
+  let fieldsetInputs = document.querySelectorAll(".fitb-fieldset input, fieldset.fitb-fieldset input");
+  if (fieldsetInputs.length > 0) {
+    console.log("S: FITB Type 3 (fitb-fieldset):", fieldsetInputs.length, "blanks");
+    return { isFillBlank: true, blankInputs: Array.from(fieldsetInputs), blankType: "fitb-fieldset" };
+  }
+
+  // Type 4: inputs in lists (ol/ul within prompt)
+  let listInputs = document.querySelectorAll(".prompt ol input, .prompt ul input");
+  if (listInputs.length > 0) {
+    console.log("S: FITB Type 4 (list-based):", listInputs.length, "blanks");
+    return { isFillBlank: true, blankInputs: Array.from(listInputs), blankType: "list-based" };
+  }
+
+  // Type 5: direct text inputs in prompt
+  let promptInputs = document.querySelectorAll(".prompt input[type='text'], .prompt input:not([type])");
+  if (promptInputs.length > 0) {
+    console.log("S: FITB Type 5 (prompt-input):", promptInputs.length, "blanks");
+    return { isFillBlank: true, blankInputs: Array.from(promptInputs), blankType: "prompt-input" };
+  }
+
+  // Type 6: select dropdowns (sentence completion)
+  let selectDropdowns = document.querySelectorAll(".prompt select, .sentence-completion select");
+  if (selectDropdowns.length > 0) {
+    console.log("S: FITB Type 6 (select-dropdown):", selectDropdowns.length, "blanks");
+    return { isFillBlank: true, blankInputs: Array.from(selectDropdowns), blankType: "select-dropdown" };
+  }
+
+  return { isFillBlank: false, blankInputs: [], blankType: null };
+}
+
 function readQuestionAndResponses() {
   let question = "";
   let responses = [];
@@ -186,10 +243,13 @@ function readQuestionAndResponses() {
     }
   }
 
-  return { question, responses, responseElements };
+  // Detect fill-in-blank info
+  const fillBlankInfo = detectFillInBlank();
+
+  return { question, responses, responseElements, fillBlankInfo };
 }
 
-async function selectCorrectResponse(question, responses, responseElements) {
+async function selectCorrectResponse(question, responses, responseElements, fillBlankInfo) {
   await sleep(100);
   let nextButtonContainer = document.getElementsByClassName(
     "next-button-container",
@@ -228,28 +288,37 @@ async function selectCorrectResponse(question, responses, responseElements) {
     return;
   }
 
+  // Use passed fillBlankInfo or detect fresh
+  const currentFillBlank = fillBlankInfo || detectFillInBlank();
+  const isFillInBlank = currentFillBlank.isFillBlank;
+  const blankInputs = currentFillBlank.blankInputs;
+  const isMultipleChoice = responseElements.length > 0;
+
   // --- Use Stored Answer (If found) ---
   if (responseMap[question]) {
     const correctResponses = responseMap[question];
-    console.log("Answer found:", correctResponses);
-
-    const isFillInBlank =
-      responseElements.length === 0 &&
-      document.getElementsByClassName("input-container span-to-div").length > 0;
-    const isMultipleChoice = responseElements.length > 0;
+    console.log("S: Answer found:", correctResponses);
 
     if (isFillInBlank) {
-      let blanks = document.getElementsByClassName(
-        "input-container span-to-div",
-      );
-      console.log("S: Filling", blanks.length, "blanks with stored answers:", correctResponses);
-      for (let x = 0; x < blanks.length; x++) {
-        if (x < correctResponses.length) {
-          let inputTag = blanks[x].getElementsByTagName("input")[0];
-          if (inputTag) {
-            console.log("S: Setting blank", x, "to:", correctResponses[x]);
-            setInputValue(inputTag, correctResponses[x]);
+      console.log("S: Filling", blankInputs.length, "blanks with stored answers:", correctResponses);
+      for (let x = 0; x < blankInputs.length; x++) {
+        const answer = x < correctResponses.length ? correctResponses[x] : correctResponses[0];
+        const inputEl = blankInputs[x];
+
+        if (inputEl.tagName.toLowerCase() === "select") {
+          // Handle dropdown
+          const options = inputEl.querySelectorAll("option");
+          for (const opt of options) {
+            if (opt.textContent.trim().toLowerCase() === answer.toLowerCase()) {
+              inputEl.value = opt.value;
+              inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+              console.log("S: Set dropdown", x, "to:", answer);
+              break;
+            }
           }
+        } else {
+          console.log("S: Setting blank", x, "to:", answer);
+          setInputValue(inputEl, answer);
         }
       }
     } else if (isMultipleChoice) {
@@ -268,12 +337,14 @@ async function selectCorrectResponse(question, responses, responseElements) {
     await sleep(Math.random() * 200 + 500);
     answerButton.click();
   } else {
-    let isFillInBlankQuestion = false;
+    // --- No stored answer, guess and learn ---
+    let isFillInBlankQuestion = isFillInBlank;
     let isDragAndDrop = false;
 
     if (responseElements.length === 0) {
       if (document.querySelector(".match-single-response-wrapper")) {
         isDragAndDrop = true;
+        isFillInBlankQuestion = false;
         await sleep(500);
         let choices = document.querySelectorAll(
           ".choices-container .choice-item-wrapper .content p",
@@ -284,7 +355,7 @@ async function selectCorrectResponse(question, responses, responseElements) {
         let numDrops = 0;
 
         while (drop.length > 0 && numDrops < 6) {
-          console.log("Executing drag and drop: ", numDrops);
+          console.log("S: Executing drag and drop:", numDrops);
           if (choices[0] && drop[0]) {
             await simulateDragAndDrop(choices[0], drop[0]);
           }
@@ -297,19 +368,21 @@ async function selectCorrectResponse(question, responses, responseElements) {
           numDrops += 1;
         }
         if (numDrops >= 6 && drop.length > 0) {
-          console.log("Giving up drag and drop after 6 attempts.");
+          console.log("S: Giving up drag and drop after 6 attempts.");
         }
-      } else if (
-        document.getElementsByClassName("input-container span-to-div").length >
-        0
-      ) {
-        isFillInBlankQuestion = true;
-        let blanks = document.getElementsByClassName(
-          "input-container span-to-div",
-        );
-        for (let x = 0; x < blanks.length; x++) {
-          let inputTag = blanks[x].getElementsByTagName("input")[0];
-          if (inputTag) setInputValue(inputTag, "ANSWER");
+      } else if (isFillInBlankQuestion) {
+        console.log("S: No stored answer, filling", blankInputs.length, "blanks with placeholder");
+        for (let x = 0; x < blankInputs.length; x++) {
+          const inputEl = blankInputs[x];
+          if (inputEl.tagName.toLowerCase() === "select") {
+            const options = inputEl.querySelectorAll("option");
+            if (options.length > 1) {
+              inputEl.value = options[1].value;
+              inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+          } else {
+            setInputValue(inputEl, "ANSWER");
+          }
         }
       }
     } else {
@@ -324,39 +397,14 @@ async function selectCorrectResponse(question, responses, responseElements) {
 
     // --- Learn the Correct Answer ---
     // Wait longer for feedback to render
-    await sleep(800);
+    await sleep(1000);
     let answers = [];
 
     if (isFillInBlankQuestion) {
-      // Each .correct-answers element corresponds to one blank
-      // Each can have MULTIPLE .correct-answer spans (acceptable alternatives)
-      let answerContainers = document.getElementsByClassName("correct-answers");
-      console.log("S: Found", answerContainers.length, "correct-answers containers (blanks)");
-
-      for (let x = 0; x < answerContainers.length; x++) {
-        // Get ALL acceptable answers for this blank
-        const correctAnswerEls = answerContainers[x].querySelectorAll(".correct-answer");
-        console.log("S: Blank", x, "has", correctAnswerEls.length, "acceptable answers");
-
-        if (correctAnswerEls.length > 0) {
-          // Take the first acceptable answer (they're all valid, just pick one)
-          // Clean up: remove trailing commas, "or", and extra whitespace
-          let text = correctAnswerEls[0].textContent;
-          // Remove nested separator spans content
-          const separator = correctAnswerEls[0].querySelector(".separator");
-          if (separator) {
-            text = text.replace(separator.textContent, "");
-          }
-          // Clean trailing punctuation and whitespace
-          text = text.replace(/[,\s]+$/, "").trim();
-          console.log("S: Fill-in-blank answer", x, ":", text);
-          if (text) {
-            answers.push(text);
-          }
-        }
-      }
+      // Try multiple extraction methods
+      answers = extractFillInBlankAnswers();
     } else if (isDragAndDrop) {
-      console.log("Skipping answer storage for complex drag and drop.");
+      console.log("S: Skipping answer storage for drag and drop.");
       return;
     } else {
       const answerContainer =
@@ -376,7 +424,10 @@ async function selectCorrectResponse(question, responses, responseElements) {
     }
 
     if (answers.length > 0) {
+      console.log("S: Storing answers:", answers);
       await updateMapData(question, answers);
+    } else {
+      console.log("S: WARNING - No answers extracted!");
     }
   }
 
@@ -407,6 +458,94 @@ async function selectCorrectResponse(question, responses, responseElements) {
   }
 }
 
+/**
+ * Extract fill-in-blank answers from feedback
+ * Handles multiple DOM structures
+ */
+function extractFillInBlankAnswers() {
+  let answers = [];
+
+  // Method 1: .correct-answers containers (most common)
+  let answerContainers = document.getElementsByClassName("correct-answers");
+  if (answerContainers.length > 0) {
+    console.log("S: Found", answerContainers.length, "correct-answers containers");
+    for (let x = 0; x < answerContainers.length; x++) {
+      const correctAnswerEls = answerContainers[x].querySelectorAll(".correct-answer");
+      if (correctAnswerEls.length > 0) {
+        let text = correctAnswerEls[0].textContent;
+        const separator = correctAnswerEls[0].querySelector(".separator");
+        if (separator) {
+          text = text.replace(separator.textContent, "");
+        }
+        text = text.replace(/[,\s]+$/, "").trim();
+        if (text) {
+          console.log("S: Answer", x, ":", text);
+          answers.push(text);
+        }
+      }
+    }
+    if (answers.length > 0) return answers;
+  }
+
+  // Method 2: responses-container with li.correct-answers
+  const responsesContainer = document.querySelector(".responses-container");
+  if (responsesContainer) {
+    const answerItems = responsesContainer.querySelectorAll("li.correct-answers");
+    console.log("S: Found responses-container with", answerItems.length, "items");
+    answerItems.forEach((item, idx) => {
+      const answerEls = item.querySelectorAll(".correct-answer");
+      if (answerEls.length > 0) {
+        let text = answerEls[0].textContent;
+        const sep = answerEls[0].querySelector(".separator");
+        if (sep) text = text.replace(sep.textContent, "");
+        text = text.replace(/[,\s]+$/, "").trim();
+        if (text) {
+          console.log("S: Answer", idx, ":", text);
+          answers.push(text);
+        }
+      }
+    });
+    if (answers.length > 0) return answers;
+  }
+
+  // Method 3: fitb-component.-answer
+  const fitbAnswer = document.querySelector(".fitb-component.-answer");
+  if (fitbAnswer) {
+    const answerEls = fitbAnswer.querySelectorAll(".correct-answer");
+    console.log("S: Found fitb-component with", answerEls.length, "answer elements");
+    const seenParents = new Set();
+    answerEls.forEach((el) => {
+      const parentLi = el.closest("li");
+      const parentKey = parentLi || el;
+      if (!seenParents.has(parentKey)) {
+        seenParents.add(parentKey);
+        let text = el.textContent;
+        const sep = el.querySelector(".separator");
+        if (sep) text = text.replace(sep.textContent, "");
+        text = text.replace(/[,\s]+$/, "").trim();
+        if (text) answers.push(text);
+      }
+    });
+    if (answers.length > 0) return answers;
+  }
+
+  // Method 4: Check for revealed answers in inputs
+  const revealedInputs = document.querySelectorAll(".input-container.correct input, input.correct");
+  if (revealedInputs.length > 0) {
+    console.log("S: Found", revealedInputs.length, "revealed inputs");
+    revealedInputs.forEach((el) => {
+      const text = el.value || el.textContent;
+      if (text && text.trim() && text.trim().toLowerCase() !== "answer") {
+        answers.push(text.trim());
+      }
+    });
+    if (answers.length > 0) return answers;
+  }
+
+  console.log("S: WARNING - No fill-in-blank answers found with any method");
+  return answers;
+}
+
 async function answerQuestion() {
   if (!isContextValid()) {
     console.warn("S: Extension context invalidated during question check.");
@@ -414,9 +553,9 @@ async function answerQuestion() {
     return;
   }
 
-  let { question, responses, responseElements } = readQuestionAndResponses();
+  let { question, responses, responseElements, fillBlankInfo } = readQuestionAndResponses();
   if (question && question.trim() !== "") {
-    await selectCorrectResponse(question, responses, responseElements);
+    await selectCorrectResponse(question, responses, responseElements, fillBlankInfo);
   } else {
     const toQuestionsButton = document.querySelector(
       'button[data-automation-id="reading-questions-button"]',
