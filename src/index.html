@@ -3,103 +3,55 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Important Info (Read Me)</title>
+    <title>SmartBook Solver</title>
     <link href="styles.css" rel="stylesheet" />
   </head>
   <body>
-    <div id="solver-popup">
-      <!-- 1. READ ME SCREEN (Initially Visible) -->
-      <div id="readme-screen">
-        <header>
-          <h1>Important Info (Read Me)</h1>
-        </header>
-        <div class="content">
-          <div class="disclaimer-text">
-            <p>
-              This tool was built strictly for
-              <strong>educational purposes</strong> only and to demonstrate the
-              vulnerabilities of certain online platforms. The developer
-              <strong>does not encourage or endorse academic dishonesty</strong>
-              or the violation of institutional policies.
-            </p>
-            <p>
-              By continuing and using this software, you
-              <strong>acknowledge and agree</strong> that the developer is
-              <strong>not liable</strong> for any consequences, academic
-              penalties, or damages resulting from your use of this tool. You
-              are solely responsible for adhering to your institution's rules.
-            </p>
-          </div>
-
-          <div class="agreement-check">
-            <input type="checkbox" id="agree-checkbox" />
-            <label for="agree-checkbox"
-              >I agree and acknowledge the developer's non-liability.</label
-            >
-          </div>
-
-          <button id="continue-button" disabled>Continue to Solver</button>
-        </div>
+    <div id="app">
+      <!-- Update Required Screen -->
+      <div id="update-screen" class="screen" style="display: none">
+        <div class="icon">⚠️</div>
+        <h1>Update Required</h1>
+        <p class="muted">A new version is available. Please update to continue.</p>
+        <p class="version-info">
+          <span class="current"></span> → <span class="latest"></span>
+        </p>
+        <a id="update-btn" href="#" target="_blank" class="btn btn-primary">Download Update</a>
       </div>
 
-      <!-- 2. MAIN SOLVER SCREEN (Initially Hidden, Shown After Agreement) -->
-      <div id="main-screen" style="display: none">
-        <header>
-          <h1 id="main-header-title"></h1>
-        </header>
-        <div class="content">
-          <!-- Update Banner (hidden by default) -->
-          <div id="update-banner" style="display: none">
-            <span id="update-text"></span>
-            <div class="update-actions">
-              <a id="update-link" href="#" target="_blank">Download</a>
-              <button id="update-dismiss" title="Dismiss">Dismiss</button>
-            </div>
-          </div>
+      <!-- Disclaimer Screen -->
+      <div id="disclaimer-screen" class="screen" style="display: none">
+        <h1>Disclaimer</h1>
+        <p class="muted">
+          This tool is for <strong>educational purposes only</strong>.
+          By using it, you accept full responsibility for any consequences.
+        </p>
+        <label class="checkbox-label">
+          <input type="checkbox" id="agree-checkbox" />
+          <span>I understand and accept</span>
+        </label>
+        <button id="agree-btn" class="btn btn-primary" disabled>Continue</button>
+      </div>
 
-          <div class="bot-header-description">
-            <p>
-              Automatically solves McGrawHill SmartBook concept questions. Built
-              for educational purposes only. Use at your own discretion.
-            </p>
+      <!-- Main Screen -->
+      <div id="main-screen" class="screen" style="display: none">
+        <div class="status-card" id="status-card">
+          <div class="status-indicator" id="status-indicator"></div>
+          <div class="status-text">
+            <span class="label">Status</span>
+            <span class="value" id="status-value">Checking...</span>
           </div>
-          <p id="status-message">
-            Bot Status: <strong>Checking Storage...</strong>
-          </p>
-          <button id="toggle-bot" disabled>Toggle Bot</button>
-
-          <p class="toggle-hint-text">
-            If the on/off button doesn't work, refresh the SmartBook site and
-            try again.
-          </p>
         </div>
 
-        <div class="action-bar">
-          <a
-            href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver/releases/latest/download/McGraw-Hill-SmartBook-Solver.zip"
-            target="_blank"
-            id="download-extension"
-            class="action-button"
-          >
-            Download Extension
-          </a>
-          <a
-            href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver#installation-and-usage-guide"
-            target="_blank"
-            id="how-to-use"
-            class="action-button"
-          >
-            How To Use
-          </a>
-        </div>
+        <button id="toggle-btn" class="btn btn-toggle" disabled>
+          <span id="toggle-text">Loading...</span>
+        </button>
+
+        <p class="hint" id="hint-text"></p>
 
         <div class="footer">
-          <p class="developer-info">
-            <span id="version-display"></span>
-            <a href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver" target="_blank"
-              >GitHub</a
-            >
-          </p>
+          <span id="version"></span>
+          <a href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver" target="_blank">GitHub</a>
         </div>
       </div>
     </div>

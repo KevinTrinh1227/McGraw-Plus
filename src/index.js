@@ -1,245 +1,197 @@
-document.addEventListener("DOMContentLoaded", () => {
-  // --- Screen Elements ---
-  const readmeScreen = document.getElementById("readme-screen");
-  const mainScreen = document.getElementById("main-screen");
-  const mainHeaderTitle = document.getElementById("main-header-title");
+document.addEventListener("DOMContentLoaded", async () => {
+  // Elements
+  const screens = {
+    update: document.getElementById("update-screen"),
+    disclaimer: document.getElementById("disclaimer-screen"),
+    main: document.getElementById("main-screen"),
+  };
 
-  // --- ReadMe Elements ---
-  const agreeCheckbox = document.getElementById("agree-checkbox");
-  const continueButton = document.getElementById("continue-button");
+  const elements = {
+    agreeCheckbox: document.getElementById("agree-checkbox"),
+    agreeBtn: document.getElementById("agree-btn"),
+    toggleBtn: document.getElementById("toggle-btn"),
+    toggleText: document.getElementById("toggle-text"),
+    statusIndicator: document.getElementById("status-indicator"),
+    statusValue: document.getElementById("status-value"),
+    hintText: document.getElementById("hint-text"),
+    version: document.getElementById("version"),
+    updateBtn: document.getElementById("update-btn"),
+    currentVersion: document.querySelector(".version-info .current"),
+    latestVersion: document.querySelector(".version-info .latest"),
+  };
 
-  // --- Main Screen Elements ---
-  const statusMessage = document.getElementById("status-message");
-  const toggleButton = document.getElementById("toggle-bot");
+  const STORAGE_KEYS = {
+    agreed: "hasAgreedToDisclaimer",
+    botEnabled: "isBotEnabled",
+  };
 
-  // --- Update Banner Elements ---
-  const updateBanner = document.getElementById("update-banner");
-  const updateText = document.getElementById("update-text");
-  const updateLink = document.getElementById("update-link");
-  const updateDismiss = document.getElementById("update-dismiss");
+  const GITHUB_API = "https://api.github.com/repos/KevinTrinh1227/McGraw-Hill-SmartBook-Solver/releases/latest";
+  const TARGET_URL = "mheducation.com";
 
-  // --- Version Display ---
-  const versionDisplay = document.getElementById("version-display");
+  // Helpers
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  const AGREEMENT_KEY = "hasAgreedToDisclaimer";
-  const MAIN_HEADER_HTML =
-    '<img src="logo.png" alt="Extension Icon" class="header-logo"> McGraw-Hill SmartBook Solver';
+  const showScreen = (name) => {
+    Object.values(screens).forEach((s) => (s.style.display = "none"));
+    screens[name].style.display = "flex";
+  };
 
-  const TARGET_URL_PATTERN = "mheducation.com";
-
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  // --- Version Display ---
-  function showVersion() {
-    if (versionDisplay) {
-      const version = chrome.runtime.getManifest().version;
-      versionDisplay.textContent = `v${version} · `;
+  const compareSemver = (a, b) => {
+    const pa = a.replace(/^v/, "").split(".").map(Number);
+    const pb = b.replace(/^v/, "").split(".").map(Number);
+    for (let i = 0; i < 3; i++) {
+      if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+      if ((pa[i] || 0) < (pb[i] || 0)) return -1;
     }
-  }
+    return 0;
+  };
 
-  // --- Update Banner Logic ---
-  function checkForUpdateUI() {
-    chrome.storage.local.get(
-      ["updateAvailable", "updateVersion", "updateUrl", "dismissedUpdateVersion"],
-      (result) => {
-        if (
-          result.updateAvailable &&
-          result.updateVersion &&
-          result.dismissedUpdateVersion !== result.updateVersion
-        ) {
-          updateText.textContent = `Update available: v${result.updateVersion}`;
-          updateLink.href = result.updateUrl || "#";
-          updateBanner.style.display = "flex";
-        } else {
-          updateBanner.style.display = "none";
-        }
-      }
-    );
-  }
-
-  if (updateDismiss) {
-    updateDismiss.addEventListener("click", () => {
-      chrome.storage.local.get("updateVersion", (result) => {
-        if (result.updateVersion) {
-          chrome.storage.local.set({
-            dismissedUpdateVersion: result.updateVersion,
-          });
-        }
-        updateBanner.style.display = "none";
+  // Check for updates - returns { needsUpdate, latestVersion, downloadUrl }
+  const checkForUpdate = async () => {
+    try {
+      const res = await fetch(GITHUB_API, {
+        headers: { Accept: "application/vnd.github.v3+json" },
       });
-    });
-  }
+      if (!res.ok) return { needsUpdate: false };
 
-  // --- Screen Switching Logic ---
+      const release = await res.json();
+      const latest = release.tag_name;
+      const current = chrome.runtime.getManifest().version;
 
-  function showMainScreen() {
-    chrome.storage.local.set({ [AGREEMENT_KEY]: true });
-    document.title = "McGraw-Hill SmartBook Solver";
-    mainHeaderTitle.innerHTML = MAIN_HEADER_HTML;
-    readmeScreen.style.display = "none";
-    mainScreen.style.display = "block";
-
-    showVersion();
-    checkForUpdateUI();
-    checkBotStatusAndInitUI();
-  }
-
-  function showReadMeScreen() {
-    document.title = "Important Info (Read Me)";
-    mainScreen.style.display = "none";
-    readmeScreen.style.display = "block";
-  }
-
-  // --- ReadMe Event Handlers ---
-
-  agreeCheckbox.addEventListener("change", () => {
-    continueButton.disabled = !agreeCheckbox.checked;
-  });
-
-  continueButton.addEventListener("click", () => {
-    if (agreeCheckbox.checked) {
-      showMainScreen();
+      return {
+        needsUpdate: compareSemver(latest, current) > 0,
+        latestVersion: latest.replace(/^v/, ""),
+        currentVersion: current,
+        downloadUrl: release.html_url,
+      };
+    } catch {
+      return { needsUpdate: false };
     }
-  });
+  };
 
-  // --- Bot Logic Functions ---
+  // Send message to content script with retry
+  const sendCommand = async (action) => {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const tab = tabs[0];
 
-  function updateUI(isEnabled) {
-    toggleButton.disabled = false;
+    if (!tab?.url?.includes(TARGET_URL)) return false;
 
-    if (isEnabled) {
-      statusMessage.innerHTML = "Bot Status: <strong>ACTIVE</strong>";
-      toggleButton.textContent = "Deactivate Bot";
-      toggleButton.className = "inactive";
-    } else {
-      statusMessage.innerHTML = "Bot Status: <strong>INACTIVE</strong>";
-      toggleButton.textContent = "Activate Bot";
-      toggleButton.className = "active";
-    }
-  }
+    let injected = false;
 
-  function handleNotOnTargetPage(isBotEnabled) {
-    toggleButton.disabled = true;
-    toggleButton.textContent = "Must be on McGraw-Hill site to Toggle on/off";
-    toggleButton.className = "";
-
-    if (isBotEnabled) {
-      statusMessage.innerHTML =
-        "Bot Status: <strong>ACTIVE (Running in Background)</strong>";
-    } else {
-      statusMessage.innerHTML = "Bot Status: <strong>INACTIVE</strong>";
-    }
-  }
-
-  async function sendBotCommand(action) {
-    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-      const activeTab = tabs[0];
-
-      if (
-        !activeTab ||
-        !activeTab.url ||
-        !activeTab.url.includes(TARGET_URL_PATTERN)
-      ) {
-        console.log("Not on the target McGraw-Hill site.");
-        return;
-      }
-
-      let scriptInjected = false;
-      const MAX_RETRIES = 5;
-
-      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        try {
-          await new Promise((resolve, reject) => {
-            chrome.tabs.sendMessage(activeTab.id, action, (response) => {
-              if (chrome.runtime.lastError) {
-                reject(chrome.runtime.lastError);
-              } else {
-                resolve(response);
-              }
-            });
-          });
-          return;
-        } catch (error) {
-          const errorMsg = error.message;
-
-          if (
-            errorMsg.includes("Could not establish connection") &&
-            !scriptInjected
-          ) {
-            console.log(
-              `Attempt ${attempt}: Content script not running. Injecting contentSolver.js.`
-            );
-
+    for (let i = 0; i < 3; i++) {
+      try {
+        await chrome.tabs.sendMessage(tab.id, action);
+        return true;
+      } catch (err) {
+        if (err.message?.includes("Could not establish connection") ||
+            err.message?.includes("Receiving end does not exist")) {
+          if (!injected) {
             await chrome.scripting.executeScript({
-              target: { tabId: activeTab.id },
+              target: { tabId: tab.id },
               files: ["contentSolver.js"],
             });
-
-            scriptInjected = true;
-          } else if (
-            errorMsg.includes("Could not establish connection") &&
-            scriptInjected
-          ) {
-            console.log(
-              `Attempt ${attempt}: Script injected but listener not ready. Retrying...`
-            );
-          } else {
-            console.warn(
-              "Warning: Message failed to send with unexpected error:",
-              errorMsg
-            );
-            return;
+            injected = true;
           }
-
           await sleep(200);
+        } else {
+          // Ignore other errors (like async response channel closing)
+          return true;
         }
       }
+    }
+    return false;
+  };
 
-      console.error("Failed to send bot command after all retries.");
-    });
-  }
+  // Update UI based on bot state
+  const updateUI = (isActive, isOnSite) => {
+    elements.toggleBtn.disabled = !isOnSite;
 
-  const toggleBotHandler = () => {
-    if (toggleButton.disabled) {
+    if (isOnSite) {
+      elements.statusIndicator.className = `status-indicator ${isActive ? "active" : "inactive"}`;
+      elements.statusValue.textContent = isActive ? "Active" : "Inactive";
+      elements.toggleText.textContent = isActive ? "Stop Solver" : "Start Solver";
+      elements.toggleBtn.className = `btn btn-toggle ${isActive ? "active" : ""}`;
+      elements.hintText.textContent = "";
+    } else {
+      elements.statusIndicator.className = "status-indicator inactive";
+      elements.statusValue.textContent = "Not on McGraw-Hill";
+      elements.toggleText.textContent = "Start Solver";
+      elements.toggleBtn.className = "btn btn-toggle";
+      elements.hintText.textContent = "Open a McGraw-Hill SmartBook page to use";
+    }
+  };
+
+  // Initialize
+  const init = async () => {
+    // Show version
+    const version = chrome.runtime.getManifest().version;
+    elements.version.textContent = `v${version}`;
+
+    // Check for required update
+    const update = await checkForUpdate();
+    if (update.needsUpdate) {
+      elements.currentVersion.textContent = `v${update.currentVersion}`;
+      elements.latestVersion.textContent = `v${update.latestVersion}`;
+      elements.updateBtn.href = update.downloadUrl;
+      showScreen("update");
       return;
     }
 
-    const isCurrentlyActive = toggleButton.className === "inactive";
-    const newAction = isCurrentlyActive ? "deactivate" : "activate";
-    const newState = !isCurrentlyActive;
+    // Check agreement
+    const storage = await chrome.storage.local.get([STORAGE_KEYS.agreed, STORAGE_KEYS.botEnabled]);
 
-    updateUI(newState);
-    sendBotCommand(newAction);
+    if (!storage[STORAGE_KEYS.agreed]) {
+      showScreen("disclaimer");
+      return;
+    }
+
+    // Show main screen
+    showScreen("main");
+
+    // Check current tab
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const isOnSite = tabs[0]?.url?.includes(TARGET_URL) || false;
+    const isActive = storage[STORAGE_KEYS.botEnabled] === true;
+
+    updateUI(isActive, isOnSite);
   };
 
-  function checkBotStatusAndInitUI() {
-    toggleButton.removeEventListener("click", toggleBotHandler);
-
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const currentUrl = tabs[0]?.url || "";
-
-      chrome.storage.local.get("isBotEnabled", (storageResult) => {
-        const isBotEnabled = storageResult.isBotEnabled === true;
-
-        if (currentUrl.includes(TARGET_URL_PATTERN)) {
-          updateUI(isBotEnabled);
-          toggleButton.addEventListener("click", toggleBotHandler);
-        } else {
-          handleNotOnTargetPage(isBotEnabled);
-        }
-      });
-    });
-  }
-
-  // --- Initialization ---
-
-  chrome.storage.local.get(AGREEMENT_KEY, (result) => {
-    if (result[AGREEMENT_KEY]) {
-      showMainScreen();
-    } else {
-      showReadMeScreen();
-    }
+  // Event: Agree checkbox
+  elements.agreeCheckbox.addEventListener("change", () => {
+    elements.agreeBtn.disabled = !elements.agreeCheckbox.checked;
   });
+
+  // Event: Agree button
+  elements.agreeBtn.addEventListener("click", async () => {
+    await chrome.storage.local.set({ [STORAGE_KEYS.agreed]: true });
+    showScreen("main");
+
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const isOnSite = tabs[0]?.url?.includes(TARGET_URL) || false;
+    const storage = await chrome.storage.local.get(STORAGE_KEYS.botEnabled);
+
+    updateUI(storage[STORAGE_KEYS.botEnabled] === true, isOnSite);
+  });
+
+  // Event: Toggle button
+  elements.toggleBtn.addEventListener("click", async () => {
+    if (elements.toggleBtn.disabled) return;
+
+    const storage = await chrome.storage.local.get(STORAGE_KEYS.botEnabled);
+    const isCurrentlyActive = storage[STORAGE_KEYS.botEnabled] === true;
+    const newState = !isCurrentlyActive;
+    const action = newState ? "activate" : "deactivate";
+
+    // Update storage first
+    await chrome.storage.local.set({ [STORAGE_KEYS.botEnabled]: newState });
+
+    // Update UI optimistically
+    updateUI(newState, true);
+
+    // Send command to content script
+    await sendCommand(action);
+  });
+
+  // Start
+  init();
 });
