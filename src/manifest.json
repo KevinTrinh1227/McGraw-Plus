@@ -1,7 +1,11 @@
 {
+  "manifest_version": 3,
+  "name": "McGraw Plus",
+  "version": "3.2.0",
+  "description": "A study companion for McGraw-Hill SmartBook. Educational use only.",
   "action": {
     "default_popup": "index.html",
-    "default_title": "Open the popup"
+    "default_title": "McGraw Plus"
   },
   "background": {
     "service_worker": "serviceCore.js"
@@ -13,19 +17,15 @@
     }
   ],
   "icons": {
-    "128": "logo.png",
     "16": "logo.png",
-    "48": "logo.png"
+    "48": "logo.png",
+    "128": "logo.png"
   },
-  "manifest_version": 3,
-  "name": "McGraw-Hill SmartBook Solver",
-  "description": "Automatically interacts with McGraw-Hill SmartBook concept questions (educational use only).",
   "permissions": ["activeTab", "storage", "scripting", "alarms"],
   "host_permissions": [
     "*://learning.mheducation.com/*",
     "https://api.github.com/*"
   ],
-  "version": "3.1.2",
   "web_accessible_resources": [
     {
       "resources": ["contentSolver.js"],

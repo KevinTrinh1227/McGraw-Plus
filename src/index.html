@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>SmartBook Solver</title>
+    <title>McGraw Plus</title>
     <link href="styles.css" rel="stylesheet" />
   </head>
   <body>
@@ -12,16 +12,29 @@
       <div id="update-screen" class="screen" style="display: none">
         <div class="icon">⚠️</div>
         <h1>Update Required</h1>
-        <p class="muted">A new version is available. Please update to continue.</p>
-        <p class="version-info">
+        <p class="muted">A new version is available. Please update to continue using McGraw Plus.</p>
+        <div class="version-info">
           <span class="current"></span> → <span class="latest"></span>
-        </p>
-        <a id="update-btn" href="#" target="_blank" class="btn btn-primary">Download Update</a>
+        </div>
+        <div class="update-steps">
+          <p><strong>How to update:</strong></p>
+          <ol>
+            <li>Download the new version below</li>
+            <li>Extract the ZIP file</li>
+            <li>Go to <code>chrome://extensions</code></li>
+            <li>Remove old extension, click "Load unpacked"</li>
+            <li>Select the extracted <code>src</code> folder</li>
+          </ol>
+        </div>
+        <a id="update-btn" href="#" target="_blank" class="btn btn-primary">Download Latest Version</a>
       </div>
 
       <!-- Disclaimer Screen -->
       <div id="disclaimer-screen" class="screen" style="display: none">
-        <h1>Disclaimer</h1>
+        <div class="header">
+          <span class="logo">📚</span>
+          <h1>McGraw Plus</h1>
+        </div>
         <p class="muted">
           This tool is for <strong>educational purposes only</strong>.
           By using it, you accept full responsibility for any consequences.
@@ -35,22 +48,35 @@
 
       <!-- Main Screen -->
       <div id="main-screen" class="screen" style="display: none">
-        <div class="status-card" id="status-card">
-          <div class="status-indicator" id="status-indicator"></div>
-          <div class="status-text">
-            <span class="label">Status</span>
-            <span class="value" id="status-value">Checking...</span>
-          </div>
+        <div class="header">
+          <span class="logo">📚</span>
+          <h1>McGraw Plus</h1>
         </div>
 
-        <button id="toggle-btn" class="btn btn-toggle" disabled>
-          <span id="toggle-text">Loading...</span>
-        </button>
+        <div class="power-section">
+          <button id="power-btn" class="power-btn" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+              <line x1="12" y1="2" x2="12" y2="12"></line>
+            </svg>
+          </button>
+          <p class="status-text" id="status-text">Checking...</p>
+        </div>
 
         <p class="hint" id="hint-text"></p>
 
+        <div class="action-buttons">
+          <a href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver/releases/latest" target="_blank" class="btn btn-secondary">
+            <span>⬇️</span> Download
+          </a>
+          <button id="share-btn" class="btn btn-secondary">
+            <span>🔗</span> Share
+          </button>
+        </div>
+
         <div class="footer">
           <span id="version"></span>
+          <span class="dot">·</span>
           <a href="https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver" target="_blank">GitHub</a>
         </div>
       </div>

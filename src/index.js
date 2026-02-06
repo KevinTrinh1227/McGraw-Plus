@@ -9,12 +9,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const elements = {
     agreeCheckbox: document.getElementById("agree-checkbox"),
     agreeBtn: document.getElementById("agree-btn"),
-    toggleBtn: document.getElementById("toggle-btn"),
-    toggleText: document.getElementById("toggle-text"),
-    statusIndicator: document.getElementById("status-indicator"),
-    statusValue: document.getElementById("status-value"),
+    powerBtn: document.getElementById("power-btn"),
+    statusText: document.getElementById("status-text"),
     hintText: document.getElementById("hint-text"),
     version: document.getElementById("version"),
+    shareBtn: document.getElementById("share-btn"),
     updateBtn: document.getElementById("update-btn"),
     currentVersion: document.querySelector(".version-info .current"),
     latestVersion: document.querySelector(".version-info .latest"),
@@ -25,7 +24,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     botEnabled: "isBotEnabled",
   };
 
-  const GITHUB_API = "https://api.github.com/repos/KevinTrinh1227/McGraw-Hill-SmartBook-Solver/releases/latest";
+  const GITHUB_REPO = "https://github.com/KevinTrinh1227/McGraw-Hill-SmartBook-Solver";
+  const GITHUB_API = `https://api.github.com/repos/KevinTrinh1227/McGraw-Hill-SmartBook-Solver/releases/latest`;
   const TARGET_URL = "mheducation.com";
 
   // Helpers
@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return 0;
   };
 
-  // Check for updates - returns { needsUpdate, latestVersion, downloadUrl }
+  // Check for updates
   const checkForUpdate = async () => {
     try {
       const res = await fetch(GITHUB_API, {
@@ -58,18 +58,25 @@ document.addEventListener("DOMContentLoaded", async () => {
       const latest = release.tag_name;
       const current = chrome.runtime.getManifest().version;
 
+      // Find the zip asset
+      let downloadUrl = release.html_url;
+      const zipAsset = release.assets?.find((a) => a.name.endsWith(".zip"));
+      if (zipAsset) {
+        downloadUrl = zipAsset.browser_download_url;
+      }
+
       return {
         needsUpdate: compareSemver(latest, current) > 0,
         latestVersion: latest.replace(/^v/, ""),
         currentVersion: current,
-        downloadUrl: release.html_url,
+        downloadUrl: downloadUrl,
       };
     } catch {
       return { needsUpdate: false };
     }
   };
 
-  // Send message to content script with retry
+  // Send message to content script
   const sendCommand = async (action) => {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     const tab = tabs[0];
@@ -83,8 +90,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         await chrome.tabs.sendMessage(tab.id, action);
         return true;
       } catch (err) {
-        if (err.message?.includes("Could not establish connection") ||
-            err.message?.includes("Receiving end does not exist")) {
+        if (
+          err.message?.includes("Could not establish connection") ||
+          err.message?.includes("Receiving end does not exist")
+        ) {
           if (!injected) {
             await chrome.scripting.executeScript({
               target: { tabId: tab.id },
@@ -94,7 +103,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
           await sleep(200);
         } else {
-          // Ignore other errors (like async response channel closing)
           return true;
         }
       }
@@ -102,28 +110,52 @@ document.addEventListener("DOMContentLoaded", async () => {
     return false;
   };
 
-  // Update UI based on bot state
+  // Update UI
   const updateUI = (isActive, isOnSite) => {
-    elements.toggleBtn.disabled = !isOnSite;
+    elements.powerBtn.disabled = !isOnSite;
 
     if (isOnSite) {
-      elements.statusIndicator.className = `status-indicator ${isActive ? "active" : "inactive"}`;
-      elements.statusValue.textContent = isActive ? "Active" : "Inactive";
-      elements.toggleText.textContent = isActive ? "Stop Solver" : "Start Solver";
-      elements.toggleBtn.className = `btn btn-toggle ${isActive ? "active" : ""}`;
+      elements.powerBtn.className = `power-btn ${isActive ? "active" : ""}`;
+      elements.statusText.textContent = isActive ? "Active" : "Inactive";
+      elements.statusText.className = `status-text ${isActive ? "active" : ""}`;
       elements.hintText.textContent = "";
     } else {
-      elements.statusIndicator.className = "status-indicator inactive";
-      elements.statusValue.textContent = "Not on McGraw-Hill";
-      elements.toggleText.textContent = "Start Solver";
-      elements.toggleBtn.className = "btn btn-toggle";
-      elements.hintText.textContent = "Open a McGraw-Hill SmartBook page to use";
+      elements.powerBtn.className = "power-btn";
+      elements.statusText.textContent = "Not on McGraw-Hill";
+      elements.statusText.className = "status-text";
+      elements.hintText.textContent = "Open a SmartBook page to use";
+    }
+  };
+
+  // Share functionality
+  const shareExtension = async () => {
+    const shareData = {
+      title: "McGraw Plus",
+      text: "Check out McGraw Plus - a SmartBook study tool!",
+      url: GITHUB_REPO,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(GITHUB_REPO);
+        elements.shareBtn.innerHTML = "<span>✓</span> Copied!";
+        setTimeout(() => {
+          elements.shareBtn.innerHTML = "<span>🔗</span> Share";
+        }, 2000);
+      }
+    } catch {
+      await navigator.clipboard.writeText(GITHUB_REPO);
+      elements.shareBtn.innerHTML = "<span>✓</span> Copied!";
+      setTimeout(() => {
+        elements.shareBtn.innerHTML = "<span>🔗</span> Share";
+      }, 2000);
     }
   };
 
   // Initialize
   const init = async () => {
-    // Show version
     const version = chrome.runtime.getManifest().version;
     elements.version.textContent = `v${version}`;
 
@@ -138,7 +170,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Check agreement
-    const storage = await chrome.storage.local.get([STORAGE_KEYS.agreed, STORAGE_KEYS.botEnabled]);
+    const storage = await chrome.storage.local.get([
+      STORAGE_KEYS.agreed,
+      STORAGE_KEYS.botEnabled,
+    ]);
 
     if (!storage[STORAGE_KEYS.agreed]) {
       showScreen("disclaimer");
@@ -148,7 +183,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Show main screen
     showScreen("main");
 
-    // Check current tab
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     const isOnSite = tabs[0]?.url?.includes(TARGET_URL) || false;
     const isActive = storage[STORAGE_KEYS.botEnabled] === true;
@@ -156,12 +190,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateUI(isActive, isOnSite);
   };
 
-  // Event: Agree checkbox
+  // Events
   elements.agreeCheckbox.addEventListener("change", () => {
     elements.agreeBtn.disabled = !elements.agreeCheckbox.checked;
   });
 
-  // Event: Agree button
   elements.agreeBtn.addEventListener("click", async () => {
     await chrome.storage.local.set({ [STORAGE_KEYS.agreed]: true });
     showScreen("main");
@@ -173,24 +206,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateUI(storage[STORAGE_KEYS.botEnabled] === true, isOnSite);
   });
 
-  // Event: Toggle button
-  elements.toggleBtn.addEventListener("click", async () => {
-    if (elements.toggleBtn.disabled) return;
+  elements.powerBtn.addEventListener("click", async () => {
+    if (elements.powerBtn.disabled) return;
 
     const storage = await chrome.storage.local.get(STORAGE_KEYS.botEnabled);
     const isCurrentlyActive = storage[STORAGE_KEYS.botEnabled] === true;
     const newState = !isCurrentlyActive;
     const action = newState ? "activate" : "deactivate";
 
-    // Update storage first
     await chrome.storage.local.set({ [STORAGE_KEYS.botEnabled]: newState });
-
-    // Update UI optimistically
     updateUI(newState, true);
-
-    // Send command to content script
     await sendCommand(action);
   });
+
+  elements.shareBtn.addEventListener("click", shareExtension);
 
   // Start
   init();

@@ -1,15 +1,16 @@
 /* Modern Minimal Theme */
 :root {
-  --bg: #0d0d0d;
-  --bg-card: #161616;
+  --bg: #0a0a0a;
+  --bg-card: #141414;
   --bg-hover: #1a1a1a;
   --text: #ffffff;
-  --text-muted: #737373;
+  --text-muted: #666666;
   --accent: #3b82f6;
   --accent-hover: #60a5fa;
   --success: #22c55e;
+  --success-glow: rgba(34, 197, 94, 0.4);
   --danger: #ef4444;
-  --border: #262626;
+  --border: #222222;
   --radius: 12px;
   --radius-sm: 8px;
 }
@@ -24,8 +25,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--bg);
   color: var(--text);
-  width: 280px;
-  min-height: 200px;
+  width: 260px;
 }
 
 #app {
@@ -38,6 +38,23 @@ body {
   gap: 16px;
 }
 
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.header .logo {
+  font-size: 1.4rem;
+}
+
+.header h1 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
 /* Typography */
 h1 {
   font-size: 1.1rem;
@@ -46,7 +63,7 @@ h1 {
 }
 
 p {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   line-height: 1.5;
 }
 
@@ -61,16 +78,18 @@ strong {
 
 /* Buttons */
 .btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  text-align: center;
   text-decoration: none;
 }
 
@@ -89,76 +108,86 @@ strong {
   cursor: not-allowed;
 }
 
-.btn-toggle {
+.btn-secondary {
   background: var(--bg-card);
   color: var(--text);
   border: 1px solid var(--border);
 }
 
-.btn-toggle:hover:not(:disabled) {
+.btn-secondary:hover {
   background: var(--bg-hover);
-  border-color: var(--text-muted);
+  border-color: #333;
 }
 
-.btn-toggle:disabled {
-  color: var(--text-muted);
-  cursor: not-allowed;
-}
-
-.btn-toggle.active {
-  background: var(--success);
-  border-color: var(--success);
-  color: white;
-}
-
-.btn-toggle.active:hover:not(:disabled) {
-  background: #16a34a;
-}
-
-/* Status Card */
-.status-card {
+/* Power Button */
+.power-section {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
-  background: var(--bg-card);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
+  padding: 8px 0;
 }
 
-.status-indicator {
-  width: 10px;
-  height: 10px;
+.power-btn {
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  background: var(--text-muted);
-  flex-shrink: 0;
+  border: 3px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.status-indicator.active {
-  background: var(--success);
-  box-shadow: 0 0 8px var(--success);
+.power-btn svg {
+  width: 36px;
+  height: 36px;
 }
 
-.status-indicator.inactive {
-  background: var(--danger);
+.power-btn:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+.power-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.power-btn.active {
+  border-color: var(--success);
+  color: var(--success);
+  box-shadow: 0 0 20px var(--success-glow), inset 0 0 20px rgba(34, 197, 94, 0.1);
+}
+
+.power-btn.active:hover:not(:disabled) {
+  border-color: var(--success);
 }
 
 .status-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.status-text .label {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.status-text .value {
   font-size: 0.9rem;
   font-weight: 600;
+  color: var(--text-muted);
+}
+
+.power-btn.active + .status-text,
+.status-text.active {
+  color: var(--success);
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.action-buttons .btn {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: 0.8rem;
 }
 
 /* Checkbox */
@@ -168,12 +197,12 @@ strong {
   gap: 10px;
   font-size: 0.85rem;
   cursor: pointer;
-  padding: 8px 0;
+  padding: 4px 0;
 }
 
 .checkbox-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
   accent-color: var(--accent);
 }
@@ -183,6 +212,7 @@ strong {
   font-size: 0.75rem;
   color: var(--text-muted);
   text-align: center;
+  min-height: 1em;
 }
 
 /* Footer */
@@ -190,25 +220,29 @@ strong {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  padding-top: 8px;
+  gap: 6px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
 }
 
+.footer .dot {
+  opacity: 0.5;
+}
+
 .footer a {
-  color: var(--accent);
+  color: var(--text-muted);
   text-decoration: none;
 }
 
 .footer a:hover {
-  text-decoration: underline;
+  color: var(--text);
 }
 
 /* Update Screen */
 #update-screen .icon {
-  font-size: 2.5rem;
+  font-size: 2rem;
   text-align: center;
 }
 
@@ -218,7 +252,7 @@ strong {
 
 .version-info {
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   padding: 8px 12px;
   background: var(--bg-card);
   border-radius: var(--radius-sm);
@@ -233,4 +267,35 @@ strong {
 .version-info .latest {
   color: var(--success);
   font-weight: 600;
+}
+
+/* Update Steps */
+.update-steps {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 0.75rem;
+}
+
+.update-steps p {
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+}
+
+.update-steps ol {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+}
+
+.update-steps li {
+  margin-bottom: 4px;
+}
+
+.update-steps code {
+  background: var(--bg);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.7rem;
 }
